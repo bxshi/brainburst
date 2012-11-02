@@ -49,7 +49,7 @@ wsServer.on('request', function(request){
 
    //route of connection
    connection.on('message', function(message){
-       if(message.type == 'utf-8' && message.isValidUTF8()) {
+       if(message.type == 'utf8') {
            console.log("Received string: "+message.utf8Data);
            connection.sendUTF(message.utf8Data);
        }else if (message.type == 'binary'){
