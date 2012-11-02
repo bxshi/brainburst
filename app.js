@@ -20,3 +20,44 @@ var server = http.createServer(function(request, response){
 server.listen(9876, function(){
    console.log((new Date)+" Server started, listening on port "+9876);
 });
+
+wsServer = new WebSocketServer({
+    httpServer  : server,
+
+    //long-connection settings
+    keepalive   :   true,
+    keepaliveInterval   :   20000,
+    dropConnectionOnKeepaliveTimeout    :   true,
+    keepaliveGracePeriod    :   10000,
+
+    autoAcceptConnections   :   false
+});
+
+wsServer.on('request', function(request){
+
+   //TODO could add `request.origin` 's check
+
+    try{
+       var connection = request.accept('brain_burst', request.origin);
+   }catch(e){
+       console.log((new Date)+" connection from "+request.remoteAddress+" reject, it does not have the supported protocol.");
+       console.log((new Date)+" the protocol of request is "+request.requestedProtocols);
+       var connection = request.reject('not supported');
+       return;
+   }
+   console.log((new Date)+" connection accepted. connection details are "+connection.remoteAddress);
+
+   //route of connection
+   connection.on('message', function(message){
+       if(message.type == 'utf-8' && message.isValidUTF8()) {
+           console.log("Received string: "+message.utf8Data);
+           connection.sendUTF(message.utf8Data);
+       }else if (message.type == 'binary'){
+           console.log('Received Binary Message, which currently not supported.');
+           connection.send("{status:'error'}");
+       }
+   });
+   connection.on('close', function(reasonCode, description){
+       console.log((new Date)+" Peer "+connection.remoteAddress+' disconnected.');
+   });
+});
