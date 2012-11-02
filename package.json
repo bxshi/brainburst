@@ -5,7 +5,8 @@
     "description"   :   "what is this fuck?",
 
     "dependencies"  :   {
-        "websocket" :   "*"
+        "websocket" :   "*",
+        "http"  :   "*"
     },
 
     "engines"   :   "0.6.x"
