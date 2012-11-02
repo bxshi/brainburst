@@ -36,11 +36,17 @@ wsServer = new WebSocketServer({
     autoAcceptConnections   :   false
 });
 
+//Pool of connections
+
+var connections = {};
+var connectionIDCounter = 0;
+
+
 wsServer.on('request', function(request){
 
    //TODO could add `request.origin` 's check
 
-    try{
+   try{
        var connection = request.accept('brain_burst', request.origin);
    }catch(e){
        console.log((new Date)+" connection from "+request.remoteAddress+" reject, it does not have the supported protocol.");
@@ -48,7 +54,18 @@ wsServer.on('request', function(request){
        var connection = request.reject('not supported');
        return;
    }
+
+   //Maintain the pool
+   connection.id = connectionIDCounter++;
+   connections[connection.id] = connection;
+
    console.log((new Date)+" connection accepted. connection details are "+connection.remoteAddress);
+
+   //output connection pool
+   Object.keys(connections).forEach(function(key){
+       console.log("online user : key:"+key+" value:"+connections[key]);
+   });
+
 
    //route of connection
    connection.on('message', function(message){
