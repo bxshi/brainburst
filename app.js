@@ -7,6 +7,9 @@
  * To change this template use File | Settings | File Templates.
  */
 
+var Conf = require('./configuration.js');
+//PLEASE CHANGE THIS IF YOU WANT TO RUN UNDER DIFFERENT PRODUCTION ENVIRONMENT: development or deployment
+var conf = new Conf('development');
 
 var WebSocketServer =   require('websocket').server;
 var http    =   require('http');
@@ -17,8 +20,8 @@ var server = http.createServer(function(request, response){
     response.end();
 });
 
-server.listen(9876, function(){
-   console.log((new Date)+" Server started, listening on port "+9876);
+server.listen(conf.WebSocketPort, function(){
+   console.log((new Date)+" Server started, listening on port "+conf.WebSocketPort);
 });
 
 wsServer = new WebSocketServer({
