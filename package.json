@@ -1,0 +1,12 @@
+{
+    "name"  :   "BrainBurst",
+    "version"   :   "0.0.1",
+    "author"    :   "carmack.shi",
+    "description"   :   "what is this fuck?",
+
+    "dependencies"  :   {
+        "websocket" :   "*"
+    },
+
+    "engines"   :   "0.6.x"
+}
