@@ -7,32 +7,49 @@
  */
 
 var assert = require("should");
-
-describe('websocket', function(){
+describe("FrontEndTest", function(){
     describe('websocket establish connection', function(){
-        it('should return ok', function(){
-            var WebSocketClient = require("../node_modules/websocket/lib/WebSocketClient.js");
+        it('should establish connection correctly', function(done){
             var res;
-            var args = {
-                secure:false
-            };
-            var wsClient = new WebSocketClient();
-            wsClient.connect("ws://127.0.0.1:9876",'brain_burst');
+            var wsClient = create_ws_client('ws://127.0.0.1:9876','brain_burst');
             wsClient.on('connect', function(connection){
                 res = true;
-                wsClient.close();
-                done();
-            });
-            wsClient.on('close', function(){
+                res.should.be.true;
                 done();
             });
             wsClient.on('connectFailed', function(error){
                 res = false;
+                res.should.be.true;
                 done();
             });
-
-            res.should.be.ok;
-
+            console.log(res);
+        });
+        it('should disconnected by server.(also, that may crash server if there is not a protocol validation)', function(done){
+            var res;
+            var wsClient = create_ws_client('ws://127.0.0.1:9876');
+            wsClient.on('connect', function(connection){
+                res = true;
+                res.should.be.false;
+                done();
+            });
+            wsClient.on('connectFailed', function(error){
+                res = false;
+                res.should.be.false;
+                done();
+            });
         });
     });
 });
+
+
+//test functions
+
+function create_ws_client(url,protocol) {
+    var WebSocketClient = require("../node_modules/websocket/lib/WebSocketClient.js");
+    var args = {
+        secure:false
+    };
+    var wsClient = new WebSocketClient();
+    wsClient.connect(url, protocol);
+    return wsClient;
+}

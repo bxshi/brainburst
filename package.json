@@ -1,13 +1,16 @@
 {
-    "name"  :   "BrainBurst",
-    "version"   :   "0.0.1",
-    "author"    :   "carmack.shi",
-    "description"   :   "what is this fuck?",
+    "name" : "BrainBurst",
+    "version" : "0.0.1",
+    "author" : "carmack.shi",
+    "description" : "what is this fuck?",
 
-    "dependencies"  :   {
-        "websocket" :   "*",
-        "http"  :   "*"
+    "dependencies" : {
+        "websocket" : "*",
+        "http" : "*",
+        "cluster" : "*",
+	"mocha" : "*",
+	"should" : "*"
     },
 
-    "engines"   :   "0.6.x"
+    "engines" : "0.6.x"
 }

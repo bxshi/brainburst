@@ -6,8 +6,8 @@
  * To change this template use File | Settings | File Templates.
  */
 
-module.exports = function(environment){
-    switch(environment){
+module.exports = function(){
+    switch(process.env.NODE_ENV){
         case 'deployment':
             return {}
         case 'development':
