@@ -7,9 +7,12 @@
  */
 
 var assert = require("should");
-describe("FrontEndTest", function(){
-    describe('websocket establish connection', function(){
-        it('should establish connection correctly', function(done){
+
+console.log('\n\n===FrontEndTest===');
+
+describe("# FrontEndTest", function(){
+    describe('- Websocket establish connection', function(){
+        it('* Should establish connection correctly', function(done){
             var res;
             var wsClient = create_ws_client('ws://127.0.0.1:9876','brain_burst');
             wsClient.on('connect', function(connection){
@@ -22,9 +25,22 @@ describe("FrontEndTest", function(){
                 res.should.be.true;
                 done();
             });
-            console.log(res);
         });
-        it('should disconnected by server.(also, that may crash server if there is not a protocol validation)', function(done){
+        it('* Should establish connection correctly', function(done){
+            var res;
+            var wsClient = create_ws_client('ws://127.0.0.1:9876',['brain_burst','foobar']);
+            wsClient.on('connect', function(connection){
+                res = true;
+                res.should.be.true;
+                done();
+            });
+            wsClient.on('connectFailed', function(error){
+                res = false;
+                res.should.be.true;
+                done();
+            });
+        });
+        it('* should disconnected by server.(also, that may crash server if there is not a protocol validation)', function(done){
             var res;
             var wsClient = create_ws_client('ws://127.0.0.1:9876');
             wsClient.on('connect', function(connection){
@@ -38,6 +54,19 @@ describe("FrontEndTest", function(){
                 done();
             });
         });
+        it('* should disconnected by server',function(done){
+            var res;
+            var wsClient = create_ws_client('ws://127.0.0.1:9876',[]);
+            wsClient.on('connect', function(connection){
+                res = true;
+                res.should.be.false;
+                done();
+            });
+            wsClient.on('connectFailed', function(error){
+                res = false;
+                res.should.be.false;
+                done();
+            });        });
     });
 });
 
