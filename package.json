@@ -8,8 +8,10 @@
         "websocket" : "*",
         "http" : "*",
         "cluster" : "*",
-	"mocha" : "*",
-	"should" : "*"
+	    "mocha" : "*",
+	    "should" : "*",
+        "redis" : "*",
+        "hiredis" : "*"
     },
 
     "engines" : "0.6.x"

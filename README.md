@@ -11,7 +11,7 @@ A Turn-based game server in Node.js
 
 Because `websocket` may need local extension, so please run `npm install` or `npm install websocket` to compile this.
 
-**Updated:** If there is some strange problem, please `rm -rf node_modules` and then run `npm install` under project folder.
+**Updated:** IT IS HIGHLY RECOMMEND TO RUN `rm -rf node_modules` and then run `npm install` under project folder.
 
 ##Configuration
 
