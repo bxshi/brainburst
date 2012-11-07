@@ -16,3 +16,9 @@ Because `websocket` may need local extension, so please run `npm install` or `np
 ##Configuration
 
 The configuration file is `configuration.js`, when doing local debug, please use `NODE_ENV=development` environment, otherwise use `NODE_ENV=depolyment`
+
+##Run
+
+Please use `NODE_ENV=development node app.js` or `NODE_ENV=deployment node app.js` to run this app.
+
+If you are using `WebStorm` as IDE, maybe you could just run it by `BrainBurst` running configuration.
