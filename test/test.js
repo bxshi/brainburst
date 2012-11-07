@@ -8,9 +8,9 @@
 
 var assert = require("should");
 
-console.log('\n\n===FrontEndTest===');
+console.log('\n\n===WebsocketBasicTest===');
 
-describe("# FrontEndTest", function(){
+describe("# WebsocketBasicTest", function(done){
     describe('- Websocket establish connection', function(){
         it('* Should establish connection correctly', function(done){
             var res;
@@ -70,6 +70,20 @@ describe("# FrontEndTest", function(){
     });
 });
 
+console.log('===RedisDataBaseTest===');
+//TODO test Redis database, try using APIs used by this project to test it
+
+console.log('===ConnectionPoolTest===');
+//TODO test connection pool consistency between multi-process routers.
+
+console.log('===MongoDBDataBaseTest===');
+//TODO test MongoDB database, try using APIs used by this project to test it
+
+console.log('===BackEndLogicTest===');
+//TODO test logic by using websocket API to test
+
+console.log('===ComplicatingTest===');
+//TODO test response time for thousands of requests per second.
 
 //test functions
 
