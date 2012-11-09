@@ -14,7 +14,8 @@
         "hiredis" : "*",
         "cli-color" : "*",
         "node-uuid" : "*",
-        "async" : "*"
+        "async" : "*",
+        "mongodb" : "*"
     },
 
     "engines" : "0.6.x"
