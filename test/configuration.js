@@ -30,5 +30,6 @@ exports.redis = {
     port : 6379,
     options : {
         database : 'letter_press_test'
-    }
+    },
+    redisPushDB : 1
 }
