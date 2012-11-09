@@ -9,34 +9,48 @@
 
 var cluster = require('cluster');
 var CPU_NUM = require('os').cpus().length;
+var logger = require('./libs/logger.js');
+
 
 //multi-core task
 
 if (cluster.isMaster) {//create multi-worker to handle websocket requests
+
+    //clear redis-connection-pool's data
+    var client = require('./libs/redis_connection_pool.js');
+    client.flush();
+    logger.info("Redis connection pool flushed");
+
     //fork worker
     for (var i = 0; i< CPU_NUM; i++) {
         cluster.fork();
     }
 
     cluster.on('exit', function(worker, code, signal){
-        console.log('worker' + worker.process.pid + ' terminated');
+        logger.error('worker '+worker.process.pid+' terminated');
     });
 }else{//actual work flow
+
+    var uuid = require("node-uuid");
+    var async = require('async');
+
+
+    var connection_pool = require('./libs/redis_connection_pool.js');
+
     var Conf = require('./configuration.js');
-//PLEASE CHANGE THIS IF YOU WANT TO RUN UNDER DIFFERENT PRODUCTION ENVIRONMENT: development or deployment
     var conf = new Conf();
 
     var WebSocketServer = require('websocket').server;
     var http = require('http');
 
     var server = http.createServer(function(request, response){
-        console.log((new Date())+" Received request for "+request.url);
+        logger.warn("Received http request for "+request.url+" that maybe a attack?");
         response.writeHead(404);
         response.end();
     });
 
     server.listen(conf.WebSocketPort, function(){
-        console.log((new Date)+" Server started, listening on port "+conf.WebSocketPort);
+        logger.info('Server started, linstening on port'+conf.WebSocketPort);
     });
 
     wsServer = new WebSocketServer({
@@ -54,46 +68,97 @@ if (cluster.isMaster) {//create multi-worker to handle websocket requests
 //Pool of connections
 
     var connections = {};
-    var connectionIDCounter = 0;
-
 
     wsServer.on('request', function(request){
-
-        //TODO could add `request.origin` 's check
 
         try{
             var connection = request.accept('brain_burst', request.origin);
         }catch(e){
-            console.log((new Date)+" connection from "+request.remoteAddress+" reject, it does not have the supported protocol.");
-            console.log((new Date)+" the protocol of request is "+request.requestedProtocols);
+            logger.warn("connection from "+request.remoteAddress+" is rejected, it does not holding the supported protocol.")
             var connection = request.reject('not supported');
             return;
         }
 
-        //Maintain the pool
-        connection.id = connectionIDCounter++;
-        connections[connection.id] = connection;
-
-        console.log((new Date)+" connection accepted by "+process.pid+". connection details are "+connection.remoteAddress);
-
-        //output connection pool
-        Object.keys(connections).forEach(function(key){
-            console.log("online user : key:"+key+" value:"+connections[key]);
-        });
-
-
         //route of connection
         connection.on('message', function(message){
             if(message.type == 'utf8') {
-                console.log("Received string: "+message.utf8Data);
-                connection.sendUTF(message.utf8Data);
+
+                logger.info("Received data: "+message.utf8Data);
+                try{
+                    var JSONmsg = JSON.parse(message.utf8Data);
+
+                }catch(e){
+                    logger.error('Client\'s request is not a valid JSON string');
+                    connection.close();
+                }
+
+                //validate msg_id
+
+                try{
+                    if(JSONmsg.msg_id){
+                    }
+                }catch(e){
+                    connection.sendUTF('{"status":"error","msg":"request json does not contains a msg_id."}');
+                    return;
+                }
+
+                //router
+                switch(JSONmsg.type) {
+                    case 'user_login':
+                        logger.info("user_login");
+                        try{
+                            if(JSONmsg.user.user_id){
+
+                                //TODO user validation (mongoDB)
+
+                                connection_pool.setConnection(JSONmsg.user.user_id,process.pid);
+                                connection.id = JSONmsg.user.user_id;
+                            }
+                        }catch(e){
+                            var connection_uuid = uuid.v4();
+                            connection.id = connection_uuid;
+                            connection_pool.setConnection(connection_uuid,process.pid);
+
+                        }
+                        connections[connection.id] = connection;
+                        connection.sendUTF('{"msg_id":"'+connection.id+'","status":"ok","user":{"user_id":"'+connection.id+'"}}');
+                        logger.info("connection accepted, worker pid is "+process.pid+". uuid is "+connection.id);
+                        break;
+
+                    //TODO: Add login validation(uuid in pool)
+
+                    case 'create_match':
+                        logger.info("create_match");
+                        connection.sendUTF('{"status":"ok"}');
+                        break;
+                    case 'remove_match':
+                        logger.info("remove_match");
+                        connection.sendUTF('{"status":"ok"}');
+                        break;
+                    case 'submit_match':
+                        logger.info("submit_match");
+                        connection.sendUTF('{"status":"ok"}');
+                        break;
+                    case 'get_matches':
+                        logger.info("get_matches");
+                        connection.sendUTF('{"status":"ok"}');
+                        break;
+                    case 'online_players' :
+                        logger.info("online_players");
+                        connection.sendUTF('{"status":"ok"}');
+                        break;
+                }
+
             }else if (message.type == 'binary'){
-                console.log('Received Binary Message, which currently not supported.');
-                connection.send("{status:'error'}");
+                logger.warn('Get binary data, maybe an attack?');
+                connection.send('{"status":"error"}');
             }
         });
         connection.on('close', function(reasonCode, description){
-            console.log((new Date)+" Peer "+connection.remoteAddress+' disconnected.');
+            connection_pool.delConnection(connection.id, function(){
+                delete connections[connection.id];
+                logger.info("Peer "+connection.id+" disconnected");
+            });
         });
     });
 }
