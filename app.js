@@ -28,6 +28,8 @@ if (!cluster.isMaster) {//actual work flow
     var mongo = require('./libs/MongoDBConnection.js');
     var mongoClient = new mongo.MongoDBConnection(conf.mongo);
 
+    var JSONValidation = require('./libs/JSONValidation.js');
+
     var WebSocketServer = require('websocket').server;
     var http = require('http');
 
@@ -72,6 +74,8 @@ if (!cluster.isMaster) {//actual work flow
             if (message.type == 'utf8') {
 
                 logger.info("Received data: " + message.utf8Data);
+
+                //JSON validation
                 try {
                     var JSONmsg = JSON.parse(message.utf8Data);
 
@@ -80,16 +84,8 @@ if (!cluster.isMaster) {//actual work flow
                     connection.close();
                 }
 
-                //validate msg_id & type
-
-                try {
-                    if (JSONmsg.msg_id == undefined) {
-                        throw 'error';
-                    }
-                    if(JSONmsg.type == undefined) {
-                        throw 'error';
-                    }
-                } catch (e) {
+                //JSON message validation
+                if (!JSONValidation.json_validation(JSONmsg)){
                     connection.sendUTF('{"status":"error","msg":"request json does not contains a msg_id or type."}');
                     logger.error("get a request without a msg_id or type");
                     connection.close();//is that ok?
@@ -98,46 +94,45 @@ if (!cluster.isMaster) {//actual work flow
 
                 //router
 
-                //TODO: add validation about each message styles.
                 switch (JSONmsg.type) {
                     case 'user_login':
-                        logger.info("user_login");
-                        try {
-                            if (JSONmsg.user.user_id!=undefined) {
 
-                                //TODO user validation (mongoDB)
-                                var playerDAO = new player.PlayerDAO(mongoClient);
-                                logger.info("user_id is " + JSONmsg.user.user_id);
-                                playerDAO.getPlayerById(JSONmsg.user.user_id, function (doc) {
-                                    logger.info("doc is " + doc);
-                                    if (doc) {// it is a true user
-                                        logger.info("mongoDB getPlayer " + doc);
-                                        connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
-                                        connection.id = JSONmsg.user.user_id;
-                                        connections[connection.id] = connection;
-                                        connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '"}}');
-                                        logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
-                                    } else {// user not exists
-                                        connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"error","msg":"user not exists"}');
-                                        logger.warn("get a non-exist user uuid");
-                                    }
-                                });
-                            }else{
-                                throw "error";
-                            }
-                        } catch (e) {//create user
+                        if(!JSONValidation.user_login(JSONmsg)){
+                            logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
+                            //TODO: change error message to a list, and get error from it
+                            connection.sendUTF('{"msg_id":'+JSONmsg.msg_id+',"status":"error","msg":"user_login message illegal."}')
+                            return;
+                        }
+
+                        if (JSONmsg.user.user_id!=undefined) {//login
+                            // user validation (mongoDB)
+                            var playerDAO = new player.PlayerDAO(mongoClient);
+                            logger.info("user_id is " + JSONmsg.user.user_id);
+                            playerDAO.getPlayerById(JSONmsg.user.user_id, function (doc) {
+                                if (doc) {// it is a true user
+                                    logger.info("mongoDB getPlayer " + JSON.stringify(doc));
+                                    connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
+                                    connection.id = JSONmsg.user.user_id;
+                                    connections[connection.id] = connection;
+                                    connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '","data":"'+doc.data+'"}}');
+                                    logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
+                                } else {// user not exists
+                                    connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"error","msg":"user not exists"}');
+                                    logger.warn("get a non-exist user uuid");
+                                }
+                            });
+                        }else{//register
                             var connection_uuid = uuid.v4();
                             connection.id = connection_uuid;
                             connection_pool.setConnection(connection_uuid, process.pid);
                             var playerDAO = new player.PlayerDAO(mongoClient);
                             //TODO: add other data fields
-                            playerDAO.createPlayer({user_id:connection.id}, function () {
+                            playerDAO.createPlayer({user_id:connection.id, data:JSONmsg.user.data}, function () {
                                 logger.info("create user, user_id is " + connection.id);
                                 connections[connection.id] = connection;
-                                connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '"}}');
+                                connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '","data":"'+JSONmsg.user.data+'"}}');
                                 logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
                             });
-
                         }
                         break;
 
