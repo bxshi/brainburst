@@ -8,10 +8,13 @@
         "websocket" : "*",
         "http" : "*",
         "cluster" : "*",
-	    "mocha" : "*",
-	    "should" : "*",
+        "mocha" : "*",
+        "should" : "*",
         "redis" : "*",
-        "hiredis" : "*"
+        "hiredis" : "*",
+        "cli-color" : "*",
+        "node-uuid" : "*",
+        "async" : "*"
     },
 
     "engines" : "0.6.x"
