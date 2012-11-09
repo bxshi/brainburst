@@ -4,7 +4,7 @@
  * User: Carmack.Shi <baoxu.shi@gmail.com>
  * Date: 12-11-2
  * Time: 下午12:06
- * To change this template use File | Settings | File Templates.
+ * Main logic of this app.
  */
 
 var cluster = require('cluster');
@@ -116,6 +116,8 @@ if (!cluster.isMaster) {//actual work flow
                                     connections[connection.id] = connection;
                                     connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '","data":"'+doc.data+'"}}');
                                     logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
+                                    //acknowledge master there is a new login(then master will try send push notifications)
+                                    process.send({type:"get_push",user_id:JSONmsg.msg_id});
                                 } else {// user not exists
                                     connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"error","msg":"user not exists"}');
                                     logger.warn("get a non-exist user uuid");
@@ -132,6 +134,8 @@ if (!cluster.isMaster) {//actual work flow
                                 connections[connection.id] = connection;
                                 connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '","data":"'+JSONmsg.user.data+'"}}');
                                 logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
+                                //acknowledge master there is a new login(then master will try send push notifications)
+                                process.send({type:"get_push",user_id:connection.id});
                             });
                         }
                         break;
@@ -172,19 +176,96 @@ if (!cluster.isMaster) {//actual work flow
             });
         });
     });
+
+    process.on('message', function(message){
+        if(message.type=='send_push') {
+            if(message.user_id!=undefined && connections[message.user_id]!=undefined) {
+                //what if the connection is dropped just after this ?
+                try{
+                    connections[message.user_id].sendUTF(message.data);
+                }catch(e){
+                    logger.warn("the user_id "+message.user_id+" of this push is not online!");
+                    //push failed, put it back.
+                    process.send({type:"restore_push", user_id:message.user_id, data:message.data});
+                }
+            }else{
+                logger.warn("the user_id "+message.user_id+" of this push is not online!");
+                //push failed, put it back.
+                process.send({type:"restore_push", user_id:message.user_id, data:message.data});
+            }
+        }
+    });
+
 } else {//create multi-worker to handle websocket requests
 
+    var Conf = require('./configuration.js');
+    var conf = new Conf();
     //clear redis-connection-pool's data
-    var client = require('./libs/redis_connection_pool.js');
-    client.flush();
+    var redisConnectionPoolClient = require('./libs/redis_connection_pool.js');
+    redisConnectionPoolClient.flush();
     logger.info("Redis connection pool flushed");
 
+    var PushQueue = require('./libs/PushQueue.js').PushQueue;
+    var redisPush = require('./libs/RedisConnection.js').RedisConnection;
+    var redisPushClient = new redisPush(conf.redis);
+    var queue = new PushQueue(redisPushClient);
+    var works={};
     //fork worker
     for (var i = 0; i < CPU_NUM; i++) {
-        cluster.fork();
+        works[i] = cluster.fork();
+
+        //push DB handler (message.data is a JSON string which could directly send to client)
+        works[i].on('message', function(message){
+            if(message.type!=undefined && message.user_id!=undefined){
+                switch(message.type){
+                    case 'get_push':
+                        //TODO: does this foreach function series or async? If not series, it will cause push order problems.
+                        queue.each(message.user_id,function(data){
+                            workers[i].send({type:"send_push",user_id:message.user_id,data:data})
+                        });
+                        break;
+                    case 'save_push'://new push
+                        if(message.data!=undefined){
+                            queue.pushToEnd(message.user_id,message.data, function(err,reply){
+                                if(err){
+                                    logger.error("push save error, "+err);
+                                }
+                                if(reply){
+                                    logger.info("push saved, "+err);
+                                }
+                            });
+                        }else{
+                            logger.warn("push data is empty");
+                        }
+                        break;
+                    case 'restore_push'://push that failed
+                        if(message.data!=undefined){
+                            queue.pushToFront(message.user_id,message.data, function(err,reply){
+                                if(err){
+                                    logger.error("restore push save error, "+err);
+                                }
+                                if(reply){
+                                    logger.info("restore push saved, "+err);
+                                }
+                            });
+                        }else{
+                            logger.error("push data is empty");
+                        }
+                        break;
+                    default:
+                        logger.warn("unsupported cluster message");
+                        break;
+                }
+            }else{
+                logger.warn("illegal cluster message, "+JSON.stringify(message));
+            }
+
+        });
     }
 
     cluster.on('exit', function (worker, code, signal) {
         logger.error('worker ' + worker.process.pid + ' terminated');
     });
+
+
 }
