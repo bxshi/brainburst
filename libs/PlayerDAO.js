@@ -1,16 +1,23 @@
 var mongo = require('mongodb');
 var logger = require('./logger.js');
 
-var collectionName = "players";
+var collectionName = 'players';
 
 var PlayerDAO = function(connection) {
     this.connection = connection;
+    this.connection.query(collectionName, function(collection){
+        		collection.ensureIndex({"user_id" : 1} ,function(err, msg) {
+            			if(err) {
+                				console.log('PlayerDAO index err :' + err);
+                				throw err;
+                			}
+            		});
+    });
 }
 
 PlayerDAO.prototype.getPlayerById = function(id, cb) {
     this.connection.query(collectionName, function(collection){
-        collection.findOne({user_id : id}, function(err, doc){
-            if(err){
+        collection.findOne({"user_id" : id}, function(err, doc){            if(err){
                 logger.error("mongoDB playerDAO query error, "+err);
             }
             var player = doc;

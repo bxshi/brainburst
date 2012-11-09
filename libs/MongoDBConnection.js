@@ -7,9 +7,7 @@ var MongoDBConnection = function(config) {
     this.options = config.options;
     this.queue = [];
     this.db_handler = null;
-//}
 
-//MongoDBConnection.prototype.open = function() {
     this.server = new mongo.Server(this.host, this.port, this.options);
     this.db_object = new mongo.Db(this.db, this.server, {safe:false});
     var self = this;
@@ -18,7 +16,7 @@ var MongoDBConnection = function(config) {
         var queue = self.queue;
         for(var i = 0; i < queue.length; i++) {
             if(queue[i].collectionName != null) {
-                collection = new mongo.Collection(queue[i].collectionName, db_handler);
+                var collection = new mongo.Collection( db_handler,queue[i].collectionName);
                 queue[i].callback(collection);
             }else {
                 queue[i].callback(db_handler);
