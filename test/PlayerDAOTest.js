@@ -5,8 +5,6 @@ var mongo = require('../libs/MongoDBConnection.js');
 
 var connection = new mongo.MongoDBConnection(config);
 
-//		connection.open();
-
 describe('playerDAO', function() {
 	it('getPlayerById', function(done) {
 		var dao = new player.PlayerDAO(connection);
@@ -32,8 +30,7 @@ describe('playerDAO', function() {
 		connection.drop(function() {
 			dao.createPlayer(p, function() {
 				afterCreate();
-				connection.close();
-			});	
+			});
 		});
 	});
 	
