@@ -13,12 +13,12 @@ var error = clc.red.bold.bgBlack;
 var time = clc.underline;
 module.exports={
     info:function(msg){
-        console.log(time("["+new Date()+"]")+" "+info(msg));
+        console.log(time("["+new Date()+"]")+"["+process.pid+"] "+info(msg));
     },
     warn:function(msg){
-        console.log(time("["+new Date()+"]")+" "+warning(msg));
+        console.log(time("["+new Date()+"]")+"["+process.pid+"] "+warning(msg));
     },
     error:function(msg){
-        console.log(time("["+new Date()+"]")+" "+error(msg));
+        console.log(time("["+new Date()+"]")+"["+process.pid+"] "+error(msg));
     }
 };
