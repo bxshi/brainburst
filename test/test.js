@@ -73,7 +73,7 @@ describe("# WebsocketBasicTest", function(done){
 
     describe('- Websocket router test', function(){
 
-        it("* Should closed connection by server", function(){
+        it("* non-json string", function(){
             var res;
             var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort, 'brain_burst');
             wsClient.on('connect', function(connection){
@@ -89,7 +89,7 @@ describe("# WebsocketBasicTest", function(done){
         it("* Should return a status with ok", function(done){
             var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
             wsClient.on('connect', function(connection){
-                connection.sendUTF('{"msg_id":1,"type":"user_login"}');
+                connection.sendUTF('{"msg_id":1,"type":"user_login","user":{"user_id":"92ef1c75-6db7-4b48-a5a2-45027dd9840c"}}');
                 connection.on('message', function(message){
                     var JSONmsg = JSON.parse(message.utf8Data);
                     JSONmsg.status.should.equal('ok');
