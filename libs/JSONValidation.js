@@ -28,6 +28,24 @@ module.exports = {
             return false;
         }
         return true;
+    },
+    create_match    : function(JSONmsg){
+        if(!normalValidation(JSONmsg)){
+            return false;
+        }
+        //no type
+        if(JSONmsg.type == undefined || JSONmsg.type != 'create_match'){
+            return false;
+        }
+        //no other fields
+        if(JSONmsg.game==undefined || JSONmsg.create_method==undefined){
+            return false;
+        }
+        //method = player but without friends
+        if(JSONmsg.create_method=='player' && (JSONmsg.opponent_user_id == undefined || typeof JSONmsg.opponent_user_id != Object)){
+            return false;
+        }
+        return true;
     }
 };
 
