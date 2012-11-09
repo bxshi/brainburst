@@ -6,7 +6,9 @@
  * To change this template use File | Settings | File Templates.
  */
 
-var assert = require("should");
+var should = require("should");
+
+var testConf = require("./configuration.js").testConfig;
 
 console.log('\n\n===WebsocketBasicTest===');
 
@@ -14,7 +16,7 @@ describe("# WebsocketBasicTest", function(done){
     describe('- Websocket establish connection', function(){
         it('* Should establish connection correctly', function(done){
             var res;
-            var wsClient = create_ws_client('ws://127.0.0.1:9876','brain_burst');
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
             wsClient.on('connect', function(connection){
                 res = true;
                 res.should.be.true;
@@ -28,7 +30,7 @@ describe("# WebsocketBasicTest", function(done){
         });
         it('* Should establish connection correctly', function(done){
             var res;
-            var wsClient = create_ws_client('ws://127.0.0.1:9876',['brain_burst','foobar']);
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,['brain_burst','foobar']);
             wsClient.on('connect', function(connection){
                 res = true;
                 res.should.be.true;
@@ -40,9 +42,9 @@ describe("# WebsocketBasicTest", function(done){
                 done();
             });
         });
-        it('* should disconnected by server.(also, that may crash server if there is not a protocol validation)', function(done){
+        it('* Should disconnected by server.(also, that may crash server if there is not a protocol validation)', function(done){
             var res;
-            var wsClient = create_ws_client('ws://127.0.0.1:9876');
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort);
             wsClient.on('connect', function(connection){
                 res = true;
                 res.should.be.false;
@@ -54,9 +56,9 @@ describe("# WebsocketBasicTest", function(done){
                 done();
             });
         });
-        it('* should disconnected by server',function(done){
+        it('* Should disconnected by server',function(done){
             var res;
-            var wsClient = create_ws_client('ws://127.0.0.1:9876',[]);
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,[]);
             wsClient.on('connect', function(connection){
                 res = true;
                 res.should.be.false;
@@ -67,6 +69,90 @@ describe("# WebsocketBasicTest", function(done){
                 res.should.be.false;
                 done();
             });        });
+    });
+
+    describe('- Websocket router test', function(){
+
+        it("* Should closed connection by server", function(){
+            var res;
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort, 'brain_burst');
+            wsClient.on('connect', function(connection){
+                connection.sendUTF('I\'m not a json string');
+                connection.on('disconnect', function(message){
+                    res = false;
+                    res.should.not.true;
+                    done();
+                });
+            });
+        });
+
+        it("* Should return a status with ok", function(done){
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+            wsClient.on('connect', function(connection){
+                connection.sendUTF('{"msg_id":1,"type":"user_login"}');
+                connection.on('message', function(message){
+                    var JSONmsg = JSON.parse(message.utf8Data);
+                    JSONmsg.status.should.equal('ok');
+                    should.exist(JSONmsg.user.user_id);
+                    done();
+                });
+            });
+        });
+        it("* Should return a status with ok", function(done){
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+            wsClient.on('connect', function(connection){
+                connection.sendUTF('{"type":"create_match"}');
+                connection.on('message', function(message){
+                    var JSONmsg = JSON.parse(message.utf8Data);
+                    JSONmsg.status.should.equal('ok');
+                    done();
+                });
+            });
+        });
+        it("* Should return a status with ok", function(done){
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+            wsClient.on('connect', function(connection){
+                connection.sendUTF('{"type":"remove_match"}');
+                connection.on('message', function(message){
+                    var JSONmsg = JSON.parse(message.utf8Data);
+                    JSONmsg.status.should.equal('ok');
+                    done();
+                });
+            });
+        });
+        it("* Should return a status with ok", function(done){
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+            wsClient.on('connect', function(connection){
+                connection.sendUTF('{"type":"submit_match"}');
+                connection.on('message', function(message){
+                    var JSONmsg = JSON.parse(message.utf8Data);
+                    JSONmsg.status.should.equal('ok');
+                    done();
+                });
+            });
+        });
+        it("* Should return a status with ok", function(done){
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+            wsClient.on('connect', function(connection){
+                connection.sendUTF('{"type":"get_matches"}');
+                connection.on('message', function(message){
+                    var JSONmsg = JSON.parse(message.utf8Data);
+                    JSONmsg.status.should.equal('ok');
+                    done();
+                });
+            });
+        });
+        it("* Should return a status with ok", function(done){
+            var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+            wsClient.on('connect', function(connection){
+                connection.sendUTF('{"type":"online_players"}');
+                connection.on('message', function(message){
+                    var JSONmsg = JSON.parse(message.utf8Data);
+                    JSONmsg.status.should.equal('ok');
+                    done();
+                });
+            });
+        });
     });
 });
 
