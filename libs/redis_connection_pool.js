@@ -9,18 +9,15 @@
 var uuid_generator = require('node-uuid');
 var logger = require('./logger.js')
 var redis = require("redis");
-var client = redis.createClient();
+var Conf = require('../configuration.js');
+var conf = new Conf();
+var client = redis.createClient(conf.redisPort,conf.redisHost);
+client.select(conf.redisConnectionPoolDB, function(err,res){
+    if(err){
+        logger.error('select redis connection pool DB failed');
+    }
+});
 
-//client.on("error", function(err){
-//    console.log("Error" + err);
-//});
-//console.log(uuid_generator.v4());
-//client.hmset("1231",{
-//    nickname : 'wtf',
-//    data :  'hello'
-//});
-//
-//client.quit();
 
 module.exports = {
   setConnection :   function(uuid, connection) {
