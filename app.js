@@ -83,10 +83,10 @@ if (!cluster.isMaster) {//actual work flow
                 //validate msg_id & type
 
                 try {
-                    if (type(JSONmsg.msg_id) == undefined) {
+                    if (JSONmsg.msg_id == undefined) {
                         throw 'error';
                     }
-                    if(type(JSONmsg.type) == undefined) {
+                    if(JSONmsg.type == undefined) {
                         throw 'error';
                     }
                 } catch (e) {
@@ -103,7 +103,7 @@ if (!cluster.isMaster) {//actual work flow
                     case 'user_login':
                         logger.info("user_login");
                         try {
-                            if (JSONmsg.user.user_id) {
+                            if (JSONmsg.user.user_id!=undefined) {
 
                                 //TODO user validation (mongoDB)
                                 var playerDAO = new player.PlayerDAO(mongoClient);
@@ -115,15 +115,17 @@ if (!cluster.isMaster) {//actual work flow
                                         connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
                                         connection.id = JSONmsg.user.user_id;
                                         connections[connection.id] = connection;
-                                        connection.sendUTF('{"msg_id":"' + JSONmsg.msg_id + '","status":"ok","user":{"user_id":"' + connection.id + '"}}');
+                                        connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '"}}');
                                         logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
                                     } else {// user not exists
-                                        connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + '","status":"error","msg":"user not exists"}');
+                                        connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"error","msg":"user not exists"}');
                                         logger.warn("get a non-exist user uuid");
                                     }
                                 });
+                            }else{
+                                throw "error";
                             }
-                        } catch (e) {
+                        } catch (e) {//create user
                             var connection_uuid = uuid.v4();
                             connection.id = connection_uuid;
                             connection_pool.setConnection(connection_uuid, process.pid);
@@ -132,7 +134,7 @@ if (!cluster.isMaster) {//actual work flow
                             playerDAO.createPlayer({user_id:connection.id}, function () {
                                 logger.info("create user, user_id is " + connection.id);
                                 connections[connection.id] = connection;
-                                connection.sendUTF('{"msg_id":"' + JSONmsg.msg_id + '","status":"ok","user":{"user_id":"' + connection.id + '"}}');
+                                connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '"}}');
                                 logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
                             });
 
