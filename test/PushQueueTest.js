@@ -1,6 +1,6 @@
-var PushQueue = require('../libs/PushQueue.js').PushQueue;
-var RedisConnection = require('../libs/RedisConnection.js').RedisConnection;
-var config  = require('./configuration.js').redis;
+var PushQueue = require('../libs/PushQueue').PushQueue;
+var RedisConnection = require('../libs/RedisConnection').RedisConnection;
+var config  = require('../TestConfig').redis;
 var redis = new RedisConnection(config);
 var should = require('should');
 

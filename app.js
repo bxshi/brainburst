@@ -117,6 +117,7 @@ if (!cluster.isMaster) {//actual work flow
                                     connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '","data":"'+doc.data+'"}}');
                                     logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
                                     //acknowledge master there is a new login(then master will try send push notifications)
+//                                    process.send({type:"save_push", user_id:JSONmsg.msg_id, data:"{\"status\":\"ok\"}"});
                                     process.send({type:"get_push",user_id:JSONmsg.msg_id});
                                 } else {// user not exists
                                     connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"error","msg":"user not exists"}');
@@ -209,13 +210,13 @@ if (!cluster.isMaster) {//actual work flow
     var redisPush = require('./libs/RedisConnection.js').RedisConnection;
     var redisPushClient = new redisPush(conf.redis);
     var queue = new PushQueue(redisPushClient);
-    var works={};
+    var workers={};
     //fork worker
     for (var i = 0; i < CPU_NUM; i++) {
-        works[i] = cluster.fork();
+        workers[i] = cluster.fork();
 
         //push DB handler (message.data is a JSON string which could directly send to client)
-        works[i].on('message', function(message){
+        workers[i].on('message', function(message){
             if(message.type!=undefined && message.user_id!=undefined){
                 switch(message.type){
                     case 'get_push':
@@ -226,12 +227,13 @@ if (!cluster.isMaster) {//actual work flow
                         break;
                     case 'save_push'://new push
                         if(message.data!=undefined){
+                            logger.info("save_push, JSON: "+JSON.stringify(message));
                             queue.pushToEnd(message.user_id,message.data, function(err,reply){
                                 if(err){
                                     logger.error("push save error, "+err);
                                 }
                                 if(reply){
-                                    logger.info("push saved, "+err);
+                                    logger.info("push saved, "+reply);
                                 }
                             });
                         }else{

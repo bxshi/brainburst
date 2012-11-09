@@ -1,9 +1,11 @@
 var should = require('should');
-var player = require('../libs/PlayerDAO.js');
-var config = require('./configuration.js').mongo;
-var mongo = require('../libs/MongoDBConnection.js');
+var player = require('../libs/PlayerDAO');
+var config = require('../TestConfig').mongo;
+var mongo = require('../libs/MongoDBConnection');
 
 var connection = new mongo.MongoDBConnection(config);
+
+
 
 describe('playerDAO', function() {
 	it('getPlayerById', function(done) {
@@ -30,7 +32,7 @@ describe('playerDAO', function() {
 		connection.drop(function() {
 			dao.createPlayer(p, function() {
 				afterCreate();
-			});
+			});	
 		});
 	});
 	
