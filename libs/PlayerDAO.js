@@ -17,7 +17,8 @@ var PlayerDAO = function(connection) {
 
 PlayerDAO.prototype.getPlayerById = function(id, cb) {
     this.connection.query(collectionName, function(collection){
-        collection.findOne({"user_id" : id}, function(err, doc){            if(err){
+        collection.findOne({user_id : id}, function(err, doc){
+            if(err){
                 logger.error("mongoDB playerDAO query error, "+err);
             }
             var player = doc;
