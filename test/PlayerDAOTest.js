@@ -1,7 +1,7 @@
 var should = require('should');
-var player = require('../PlayerDAO');
-var config = require('../TestConfig').mongo;
-var mongo = require('../MongoDBConnection');
+var player = require('../libs/PlayerDAO.js');
+var config = require('./configuration.js').mongo;
+var mongo = require('../libs/MongoDBConnection.js');
 
 var connection = new mongo.MongoDBConnection(config);
 
