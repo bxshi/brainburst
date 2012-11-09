@@ -6,13 +6,12 @@
  * To change this template use File | Settings | File Templates.
  */
 
-var uuid_generator = require('node-uuid');
 var logger = require('./logger.js')
 var redis = require("redis");
 var Conf = require('../configuration.js');
 var conf = new Conf();
-var client = redis.createClient(conf.redisPort,conf.redisHost);
-client.select(conf.redisConnectionPoolDB, function(err,res){
+var client = redis.createClient(conf.redisConnectionPool.port,conf.redisConnectionPool.host);
+client.select(conf.redisConnectionPool.redisDB, function(err,res){
     if(err){
         logger.error('select redis connection pool DB failed');
     }

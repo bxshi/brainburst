@@ -21,13 +21,19 @@ module.exports = function(){
                         auto_reconnect : true
                     }
                 },
-                redisHost    :   '127.0.0.1',
-                redisPort    :   6379,
-                redisConnectionPoolDB : 0,
-                redisPushDB : 1,
-                mongoHost    :   '127.0.0.1',
-                mongoPort  :    27017,
-                mongoDB :   'user'
+                redis:{
+                    host : '127.0.0.1',
+                    port : 6379,
+                    options : {
+                        database : 'letter_press_test'
+                    },
+                    redisPushDB:1
+                },
+                redisConnectionPool:{
+                    host:'127.0.0.1',
+                    port:6379,
+                    redisDB:0
+                }
             }
         default:
     }
