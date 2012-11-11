@@ -43,54 +43,65 @@ describe('MatchDAOTest', function() {
 		});
 	});
 	
+	describe('create and get', function() {
 
-	it('create and get', function(done) {
-		// console.log(1);
-		var dao = new match.MatchDAO(connection);
-		dao.getMatchById(game, '1', function(match) {
-			should.exist(match);
-			match.match_id.should.equal('1');
-			match.players[0].should.equal('sb1');
-			done();
-		// console.log(2);
-		});
-				
-			
-	});
-	it('test find matches by game and player', function(done) {
-		// console.log(3);
-		
-		var dao = new match.MatchDAO(connection);
-		dao.getMatchesByGameAndPlayer(game, 'sb2', 0, 10, function(matches) {
-			matches.should.have.lengthOf(2);
-			done();
-		// console.log(4);
-		});
-	});
-	it('test update match', function(done) {
-		// console.log(5);
-		var dao = new match.MatchDAO(connection);
-		dao.updateMatch(game, '1', {
-				'match_id': '1',
-				'players' : ['sb1', 'sb2'],
-				'status' : 'pendding'
-			}, function(){
+		it('create and get', function(done) {
+			// console.log(1);
+			var dao = new match.MatchDAO(connection);
 			dao.getMatchById(game, '1', function(match) {
 				should.exist(match);
-				match.status.should.equal('pendding');
+				match.match_id.should.equal('1');
+				match.players[0].should.equal('sb1');
 				done();
-		// console.log(6);
+			// console.log(2);
 			});
+					
+				
 		});
-	});
-	it('test pick one', function(done) {
 		
-		// console.log(7);
-		var dao = new match.MatchDAO(connection);
-		dao.pickOneWaitingMatch(game, function() {
-			done();
-		// console.log(8);
-		});
 	});
+	
+	// describe('test find matches by game and player', function() {
+		// it('test find matches by game and player', function(done) {
+			// // console.log(3);
+// 			
+			// var dao = new match.MatchDAO(connection);
+			// dao.getMatchesByGameAndPlayer(game, 'sb2', 0, 10, function(matches) {
+				// matches.should.have.lengthOf(2);
+				// done();
+			// // console.log(4);
+			// });
+		// });
+// 		
+	// });
+	// describe('test update match', function() {
+		// it('test update match', function(done) {
+			// // console.log(5);
+			// var dao = new match.MatchDAO(connection);
+			// dao.updateMatch(game, '1', {
+					// 'match_id': '1',
+					// 'players' : ['sb1', 'sb2'],
+					// 'status' : 'pendding'
+				// }, function(){
+				// dao.getMatchById(game, '1', function(match) {
+					// should.exist(match);
+					// match.status.should.equal('pendding');
+					// done();
+			// // console.log(6);
+				// });
+			// });
+		// });
+	// });
+	// describe('test pick one', function() {
+		// it('test pick one', function(done) {
+// 			
+			// // console.log(7);
+			// var dao = new match.MatchDAO(connection);
+			// dao.pickOneWaitingMatch(game, function() {
+				// done();
+			// // console.log(8);
+			// });
+		// });
+	// });
 
 });
