@@ -48,6 +48,8 @@ MatchDAO.prototype.getMatchesByGameAndPlayer = function(game, player, start, num
 MatchDAO.prototype.getMatchById = function(game, id, callback) {
 	this.connection.query(collectionName(game), function(collection) {
 		collection.findOne({'match_id': id}, function(err, match) {
+			if(err)
+				throw err;
 			callback(match);
 		});
 	});
@@ -69,6 +71,8 @@ MatchDAO.prototype.createMatch = function(game, match, callback) {
 MatchDAO.prototype.updateMatch = function(game, match_id, match, callback) {
 	this.connection.query(collectionName(game), function(collection) {
 		collection.update({'match_id': match_id}, match, function(err) {
+			if(err)
+				throw err;
 			callback();
 		});
 	});
@@ -78,7 +82,8 @@ MatchDAO.prototype.updateMatch = function(game, match_id, match, callback) {
 MatchDAO.prototype.pickOneWaitingMatch = function(game, callback) {
 	this.connection.query(collectionName(game), function(collection) {
 		collection.findAndModify({'status': 'waiting'}, {}, {'$set' : {'status' : 'pendding'}}, function(err) {
-			console.log(err);
+			if(err)
+				throw err;
 			callback();
 		});
 	});
