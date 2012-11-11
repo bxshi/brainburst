@@ -36,6 +36,12 @@ MatchDAO.prototype.ensureIndex = function(game) {
 
 
 MatchDAO.prototype.getMatchesByGameAndPlayer = function(game, player, start, num, callback) {
+	// console.log(start + "  " + num);
+	this.connection.query(collectionName(game), function(collection) {
+		collection.find({'players': player}, {'limit': num, 'skip' : start}).toArray(function(err, docs) {
+			callback(docs);
+		});
+	});
 }
 
 
@@ -50,7 +56,7 @@ MatchDAO.prototype.getMatchById = function(game, id, callback) {
 
 MatchDAO.prototype.createMatch = function(game, match, callback) {
 	if(!(match.status && match.match_id && match.players)) {
-		throw Error('match fields do not exist');
+		throw new Error('match fields do not exist');
 	}
 	this.connection.query(collectionName(game), function(collection) {
 		collection.insert(match, function(err, match) {
@@ -60,10 +66,24 @@ MatchDAO.prototype.createMatch = function(game, match, callback) {
 }
 
 
-MatchDAO.prototype.updateMatch = function(game, match, callback) {}
+MatchDAO.prototype.updateMatch = function(game, match_id, match, callback) {
+	this.connection.query(collectionName(game), function(collection) {
+		collection.update({'match_id': match_id}, match, function(err) {
+			callback();
+		});
+	});
+}
 
 
-MatchDAO.prototype.pickOneWaitingMatch = function(game, callback) {}
+MatchDAO.prototype.pickOneWaitingMatch = function(game, callback) {
+	this.connection.query(collectionName(game), function(collection) {
+		collection.findAndModify({'status': 'waiting'}, {}, {'$set' : {'status' : 'pendding'}}, function(err) {
+			console.log(err);
+			callback();
+		});
+	});
+	
+}
 
 
 exports.MatchDAO = MatchDAO;
