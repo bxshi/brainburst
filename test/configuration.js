@@ -8,11 +8,7 @@
 
 exports.testConfig = {
   wsUrl :   "ws://127.0.0.1",
-  wsPort:   "9876",
-  redisUrl  :   "127.0.0.1",
-  redisPort :   "",
-  mongoUrl  :   "",
-  mongoPort :   ""
+  wsPort:   "9876"
 };
 
 exports.mongo = {
