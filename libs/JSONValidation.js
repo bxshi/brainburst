@@ -35,22 +35,32 @@ module.exports = {
         }
         //no type
         if(JSONmsg.type == undefined || JSONmsg.type != 'create_match'){
+            console.log("no type");
             return false;
         }
         //no other fields
         if(JSONmsg.game==undefined || JSONmsg.create_method==undefined){
+            console.log("no other fields");
+            return false;
+        }
+        //create_method not correct
+        if(JSONmsg.create_method!='player'&& JSONmsg.create_method!='auto'){
+            console.log("create_method not correct");
             return false;
         }
         //method = player but without friends
         if(JSONmsg.create_method=='player' && (JSONmsg.opponent_user_id == undefined || typeof JSONmsg.opponent_user_id != Object)){
+            console.log("player but without friends");
             return false;
         }
         //no game creation info.
-        if(JSONmsg.match==undefined){
+        if(JSONmsg.match_data==undefined){
+            console.log("no game creation info.");
             return false;
         }
         //not login
         if(JSONmsg.user==undefined || JSONmsg.user.user_id==undefined){
+            console.log("not login");
             return false;
         }
 
