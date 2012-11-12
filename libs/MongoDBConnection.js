@@ -9,7 +9,7 @@ var MongoDBConnection = function(config) {
     this.db_handler = null;
 
     this.server = new mongo.Server(this.host, this.port, this.options);
-    this.db_object = new mongo.Db(this.db, this.server, {safe:false});
+    this.db_object = new mongo.Db(this.db, this.server, {safe:true});
     var self = this;
     this.db_object.open(function(err, db_handler) {
         self.db_handler = db_handler;
