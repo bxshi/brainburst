@@ -108,8 +108,8 @@ if (!cluster.isMaster) {//actual work flow
 
                         if(!JSONValidation.user_login(JSONmsg)){
                             logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
-                            //TODO: change error message to a list, and get error from it
-                            connection.sendUTF('{"msg_id":'+JSONmsg.msg_id+',"status":"error","msg":"user_login message illegal."}');
+                            //DONE: change error message to a list, and get error from it
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user_login json illegal")));
                             return;
                         }
 
@@ -152,11 +152,9 @@ if (!cluster.isMaster) {//actual work flow
                     //TODO: Add login validation(uuid in pool)
 
                     case 'create_match':
-                        logger.info("create_match");
                         if(!JSONValidation.create_match(JSONmsg)){
                             logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
-                            //TODO: change error message to a list, and get error from it
-                            connection.sendUTF('{"msg_id":'+JSONmsg.msg_id+',"status":"error","msg":"create_match message illegal."}');
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"create_match json illegal")));
                             return;
                         }
                         //TODO: Add user login validation (this must be done before publish)
@@ -233,8 +231,38 @@ if (!cluster.isMaster) {//actual work flow
                         }
                         break;
                     case 'remove_match':
-                        logger.info("remove_match");
-                        connection.sendUTF('{"status":"ok"}');
+                        if(!JSONValidation.remove_match(JSONmsg)){
+                            logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"remove_match json illegal")));
+                            return;
+                        }
+                        //TODO: validate if logged in
+
+                        var matchDAO = new match.MatchDAO(mongoClient);
+                        //TODO: validate match_id
+                        matchDAO.getMatchById(JSONmsg.game, JSONmsg.match.match_id, function(match){
+                            try{
+                                if(match==undefined){
+                                    throw "no such match";
+                                }
+                                //remove user
+                                for(var i in match.players) {
+                                    if (match.players[i] == JSONmsg.user.user_id){
+                                        delete match.players[i];
+                                    }
+                                }
+                                match.status = "end";
+
+                                matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function(){
+                                    connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
+                                    //send `leave_match` push
+                                    process.send({'type':'new_push', 'receiver':match.players, 'json':JSONBuilder.leave_match_push_builder(match)});
+                                });
+
+                            }catch(e){
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)));
+                            }
+                        });
                         break;
                     case 'submit_match':
                         logger.info("submit_match");
@@ -263,6 +291,7 @@ if (!cluster.isMaster) {//actual work flow
         });
     });
 
+    //workers' push sending logic
     process.on('message', function(message){
         if(message.type=='send_push') {
             //There we use a loop, but there some callback functions, will that cause conflict about message.receiver[i]?
@@ -331,7 +360,7 @@ if (!cluster.isMaster) {//actual work flow
                             redisConnectionPoolClient.getConnection(message.receiver[i], function(user_id,pid){
                                 logger.error("get "+user_id+"'s worker: "+pid);
                                 if(pid == null){//already disconnected
-                                    //TODO: add restore push
+                                    //DONE: add restore push
                                     logger.error("send error, user_id:"+user_id+" restore push:"+JSON.stringify(message.json));
                                     queue.pushToFront(user_id,JSON.stringify(message.json), function(err,reply){
                                         if(err){
@@ -355,21 +384,6 @@ if (!cluster.isMaster) {//actual work flow
                                 logger.error("get_push data:"+json);
                                 cluster.workers[id].send({type:"send_push",'receiver':[message.receiver[i]],'json':JSON.parse(json)});
                             });
-                        }
-                        break;
-                    case 'save_push'://new push
-                        if(message.data!=undefined){
-                            logger.info("save_push, JSON: "+JSON.stringify(message));
-                            queue.pushToEnd(message.user_id,message.data, function(err,reply){
-                                if(err){
-                                    logger.error("push save error, "+err);
-                                }
-                                if(reply){
-                                    logger.info("push saved, "+reply);
-                                }
-                            });
-                        }else{
-                            logger.warn("push data is empty");
                         }
                         break;
                     case 'restore_push'://push that failed
