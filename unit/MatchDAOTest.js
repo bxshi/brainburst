@@ -1,9 +1,9 @@
 
 var should = require('should');
-var match = require('../libs/MatchDAO');
+var MatchDAO = require('../libs/MatchDAO').MatchDAO;
 var config = require('../TestConfig');
-var mongo = require('../libs/MongoDBConnection');
-var connection = new mongo.MongoDBConnection(config.mongo);
+var MongoDBConnection = require('../libs/MongoDBConnection').MongoDBConnection;
+var connection = new MongoDBConnection(config.mongo);
 var game = 'fuckgame';
 
 
@@ -28,7 +28,7 @@ describe('MatchDAOTest', function() {
 			}
 		];
 		connection.drop(function() {
-			var dao = new match.MatchDAO(connection);
+			var dao = new MatchDAO(connection);
 			var create = function(num) {
 				if(!matches[num]) {
 					// console.log('asdf');
@@ -47,7 +47,7 @@ describe('MatchDAOTest', function() {
 
 		it('create and get', function(done) {
 			// console.log(1);
-			var dao = new match.MatchDAO(connection);
+			var dao = new MatchDAO(connection);
 			dao.getMatchById(game, '1', function(match) {
 				should.exist(match);
 				match.match_id.should.equal('1');
@@ -61,47 +61,50 @@ describe('MatchDAOTest', function() {
 		
 	});
 	
-	// describe('test find matches by game and player', function() {
-		// it('test find matches by game and player', function(done) {
-			// // console.log(3);
-// 			
-			// var dao = new match.MatchDAO(connection);
-			// dao.getMatchesByGameAndPlayer(game, 'sb2', 0, 10, function(matches) {
-				// matches.should.have.lengthOf(2);
-				// done();
-			// // console.log(4);
-			// });
-		// });
-// 		
-	// });
-	// describe('test update match', function() {
-		// it('test update match', function(done) {
-			// // console.log(5);
-			// var dao = new match.MatchDAO(connection);
-			// dao.updateMatch(game, '1', {
-					// 'match_id': '1',
-					// 'players' : ['sb1', 'sb2'],
-					// 'status' : 'pendding'
-				// }, function(){
-				// dao.getMatchById(game, '1', function(match) {
-					// should.exist(match);
-					// match.status.should.equal('pendding');
-					// done();
-			// // console.log(6);
-				// });
-			// });
-		// });
-	// });
-	// describe('test pick one', function() {
-		// it('test pick one', function(done) {
-// 			
-			// // console.log(7);
-			// var dao = new match.MatchDAO(connection);
-			// dao.pickOneWaitingMatch(game, function() {
-				// done();
-			// // console.log(8);
-			// });
-		// });
-	// });
+	describe('test find matches by game and player', function() {
+		it('test find matches by game and player', function(done) {
+			// console.log(3);
+			
+			var dao = new MatchDAO(connection);
+			dao.getMatchesByGameAndPlayer(game, 'sb2', 0, 10, function(matches) {
+				matches.should.have.lengthOf(2);
+				done();
+			// console.log(4);
+			});
+		});
+		
+	});
+	describe('test update match', function() {
+		it('test update match', function(done) {
+			// console.log(5);
+			var dao = new MatchDAO(connection);
+			dao.updateMatch(game, '1', {
+					'match_id': '1',
+					'players' : ['sb1', 'sb2'],
+					'status' : 'pending'
+				}, function(){
+				dao.getMatchById(game, '1', function(match) {
+					should.exist(match);
+					match.status.should.equal('pending');
+					done();
+			// console.log(6);
+				});
+			});
+		});
+	});
+	describe('test pick one', function() {
+		it('test pick one', function(done) {
+			
+			// console.log(7);
+			var dao = new MatchDAO(connection);
+			dao.pickOneWaitingMatch(game, function() {
+				dao.getMatchById(game, '1', function(m) {
+					m.status.should.equal('pending');
+					done();
+				});
+			// console.log(8);
+			});
+		});
+	});
 
 });

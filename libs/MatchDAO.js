@@ -61,7 +61,7 @@ MatchDAO.prototype.createMatch = function(game, match, callback) {
 		throw new Error('match fields do not exist');
 	}
 	this.connection.query(collectionName(game), function(collection) {
-		collection.insert(match, function(err, match) {
+		collection.insert(match, {}, function(err, match) {
             if(err){
                console.log("Create Match error");
             }
@@ -73,7 +73,7 @@ MatchDAO.prototype.createMatch = function(game, match, callback) {
 
 MatchDAO.prototype.updateMatch = function(game, match_id, match, callback) {
 	this.connection.query(collectionName(game), function(collection) {
-		collection.update({'match_id': match_id}, match, function(err) {
+		collection.update({'match_id': match_id}, match,  {}, function(err) {
 			if(err)
 				throw err;
 			callback();
