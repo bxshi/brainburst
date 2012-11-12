@@ -186,6 +186,26 @@ describe('- Websocket user_login test', function(){
     });
 });
 
+describe('- Websocket create_match test', function(){
+
+    it("* create_match with a valid uuid, auto match", function(done){
+        var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+        wsClient.on('connect', function(connection){
+            connection.sendUTF('{"msg_id":1, "type":"user_login", "user":{"data":"abcdefg"}}');
+            connection.on('message', function(message){
+                console.log(message.utf8Data);
+                var JSONmsg = JSON.parse(message.utf8Data);
+                if(JSONmsg.msg_id == 1){
+                    connection.sendUTF('{"msg_id":2, "user":{"user_id":"'+JSONmsg.user.user_id+'"},"type":"create_match", "game":"letter_press","create_method":"auto","max_players":2,"match_data":"aloha"}');
+                }else if(JSONmsg.msg_id == 2){
+                    should.exists(JSONmsg.match);
+                    done();
+                }
+            });
+        });
+    });
+});
+
 //test functions
 
 function create_ws_client(url,protocol) {
