@@ -20,7 +20,7 @@ PushQueue.prototype.pushToEnd = function(playerId, message, callback) {
     var name = PushQueue.queueName(playerId);
     this.client.rpush(name, message, callback);
 }
-PushQueue.prototype.pushToFront = function(message) {
+PushQueue.prototype.pushToFront = function(playerId, message, callback) {
     var name = PushQueue.queueName(playerId);
     this.client.lpush(name, message, callback);
 }

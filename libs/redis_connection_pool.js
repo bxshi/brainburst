@@ -26,11 +26,11 @@ module.exports = {
       client.get(uuid, function(err, obj){
           if (err) {
               logger.error(err);
-              callback();
+              callback(obj);
               return;
           }
 
-          callback(obj);
+          callback(uuid,obj);
       });
   },
   delConnection :   function(uuid, callback) {

@@ -19,7 +19,18 @@ module.exports = {
             JSONStr.match = {'match_id':match['match_id'],'players':match['players'],'match_data':match['match_data']};
         }
         console.dir(JSONStr);
-        console.dir(match);
-        return JSON.stringify(JSONStr);
+        return JSONStr;
+    },
+    create_match_push_builder : function(match){
+        var JSONStr = {'msg_id':-1, 'type':'invited_match'};
+        JSONStr.match = {'match_id':match['match_id'],'players':match['players'],'match_data':match['match_data']};
+        console.dir(JSONStr);
+        return JSONStr;
+    },
+    join_match_push_builder : function(match){
+        var JSONStr = {'msg_id':-1, 'type':'join_match'};
+        JSONStr.match = {'match_id':match['match_id'],'players':match['players']};
+        console.dir(JSONStr);
+        return JSONStr;
     }
 }
