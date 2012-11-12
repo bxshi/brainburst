@@ -13,7 +13,9 @@ var error = clc.red.bold.bgBlack;
 var time = clc.underline;
 module.exports={
     info:function(msg){
-        console.log(time("["+new Date()+"]")+"["+process.pid+"] "+info(msg));
+        if(process.env.NODE_ENV=='development'){
+            console.log(time("["+new Date()+"]")+"["+process.pid+"] "+info(msg));
+        }
     },
     warn:function(msg){
         console.log(time("["+new Date()+"]")+"["+process.pid+"] "+warning(msg));
