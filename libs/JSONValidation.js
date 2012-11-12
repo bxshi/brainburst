@@ -45,6 +45,15 @@ module.exports = {
         if(JSONmsg.create_method=='player' && (JSONmsg.opponent_user_id == undefined || typeof JSONmsg.opponent_user_id != Object)){
             return false;
         }
+        //no game creation info.
+        if(JSONmsg.match==undefined){
+            return false;
+        }
+        //not login
+        if(JSONmsg.user==undefined || JSONmsg.user.user_id==undefined){
+            return false;
+        }
+
         return true;
     }
 };
