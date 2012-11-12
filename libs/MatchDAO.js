@@ -84,10 +84,10 @@ MatchDAO.prototype.updateMatch = function(game, match_id, match, callback) {
 
 MatchDAO.prototype.pickOneWaitingMatch = function(game, callback) {
 	this.connection.query(collectionName(game), function(collection) {
-		collection.findAndModify({'status': 'waiting'}, {}, {'$set' : {'status' : 'pendding'}}, function(err) {
+		collection.findAndModify({'status': 'waiting'}, {}, {'$set' : {'status' : 'pending'}}, function(err,object) {
 			if(err)
 				throw err;
-			callback();
+			callback(object);
 		});
 	});
 	
