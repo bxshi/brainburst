@@ -39,7 +39,7 @@ module.exports = {
             return false;
         }
         //no other fields
-        if(JSONmsg.game==undefined || JSONmsg.create_method==undefined){
+        if(JSONmsg.game==undefined || JSONmsg.create_method==undefined || JSONmsg.max_players==undefined){
             console.log("no other fields");
             return false;
         }
@@ -49,8 +49,12 @@ module.exports = {
             return false;
         }
         //method = player but without friends
-        if(JSONmsg.create_method=='player' && (JSONmsg.opponent_user_id == undefined || typeof JSONmsg.opponent_user_id != Object)){
+        if(JSONmsg.create_method=='player' && JSONmsg.opponent_user_id == undefined){
             console.log("player but without friends");
+            return false;
+        }
+        // opponent is larger than max number
+        if(JSONmsg.opponent_user_id && JSONmsg.opponent_user_id.length >= JSONmsg.max_players){
             return false;
         }
         //no game creation info.
