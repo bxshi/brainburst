@@ -69,6 +69,28 @@ module.exports = {
         }
 
         return true;
+    },
+    remove_match : function(JSONmsg){
+        if(!normalValidation(JSONmsg)){
+            return false;
+        }
+        if(JSONmsg.type == undefined || JSONmsg.type != 'remove_match'){
+            console.log("no type");
+            return false;
+        }
+        //not login
+        if(JSONmsg.user==undefined || JSONmsg.user.user_id==undefined){
+            console.log("not login");
+            return false;
+        }
+        if(JSONmsg.game==undefined){
+            console.log("no game string");
+            return false;
+        }
+        if(JSONmsg.match==undefined || JSONmsg.match.match_id==undefined){
+            console.log("no match or no match id");
+        }
+        return true;
     }
 };
 

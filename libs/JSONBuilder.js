@@ -32,5 +32,21 @@ module.exports = {
         JSONStr.match = {'match_id':match['match_id'],'players':match['players']};
         console.dir(JSONStr);
         return JSONStr;
+    },
+    leave_match_push_builder : function(match){
+        var JSONStr = {'msg_id':-1, 'type':'leave_match'};
+        JSONStr.match = {'match_id': match['match_id'],'players':match['players']};
+        console.dir(JSONStr);
+        return JSONStr;
+    },
+    illegal_json_builder : function(msg_id,msg){
+        var JSONStr = {'msg_id':msg_id,'status':'error','msg':msg};
+        console.dir(JSONStr);
+        return JSONStr;
+    },
+    response_json_builder : function(msg_id){
+        var JSONStr = {'msg_id':msg_id, 'status':'ok'};
+        console.dir(JSONStr);
+        return JSONStr;
     }
 }
