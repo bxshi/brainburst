@@ -15,7 +15,8 @@
         "cli-color" : "*",
         "node-uuid" : "*",
         "async" : "*",
-        "mongodb" : "*"
+        "mongodb" : "*",
+        "cloneextend" : "*"
     },
 
     "engines" : "0.6.x"
