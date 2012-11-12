@@ -28,7 +28,10 @@ if (!cluster.isMaster) {//actual work flow
     var mongo = require('./libs/MongoDBConnection.js');
     var mongoClient = new mongo.MongoDBConnection(conf.mongo);
 
+    var match = require('./libs/MatchDAO.js');
+
     var JSONValidation = require('./libs/JSONValidation.js');
+    var JSONBuilder = require('./libs/JSONBuilder.js');
 
     var WebSocketServer = require('websocket').server;
     var http = require('http');
@@ -94,13 +97,15 @@ if (!cluster.isMaster) {//actual work flow
 
                 //router
 
+                //TODO: all objects returned by mongo should be output by console.dir function.
+                //TODO: change json based log to connection.sendUTF()'s callback
                 switch (JSONmsg.type) {
                     case 'user_login':
 
                         if(!JSONValidation.user_login(JSONmsg)){
                             logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
                             //TODO: change error message to a list, and get error from it
-                            connection.sendUTF('{"msg_id":'+JSONmsg.msg_id+',"status":"error","msg":"user_login message illegal."}')
+                            connection.sendUTF('{"msg_id":'+JSONmsg.msg_id+',"status":"error","msg":"user_login message illegal."}');
                             return;
                         }
 
@@ -145,7 +150,59 @@ if (!cluster.isMaster) {//actual work flow
 
                     case 'create_match':
                         logger.info("create_match");
-                        connection.sendUTF('{"status":"ok"}');
+                        if(!JSONValidation.create_match(JSONmsg)){
+                            logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
+                            //TODO: change error message to a list, and get error from it
+                            connection.sendUTF('{"msg_id":'+JSONmsg.msg_id+',"status":"error","msg":"create_match message illegal."}');
+                            return;
+                        }
+                        //TODO: Add user login validation (this must be done before publish)
+                        var matchDAO = new match.MatchDAO(mongoClient);
+                        if(JSONmsg.create_method == 'auto'){
+                                //search for existing waiting match
+                                matchDAO.pickOneWaitingMatch(JSONmsg.game, function(match){
+                                    try{
+                                        //the returned variable match is not a list but a single object
+                                        if(match==undefined)
+                                            throw "no waiting matches";
+                                        //TODO: add check to exclude game created by user its own.
+                                        console.dir(match);
+                                        //if get a match with waiting status, join it
+                                        match['players'][match['players'].length] = JSONmsg.user.user_id;
+                                        match['status'] = 'pending';
+                                        console.log(match['players']);
+                                        matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
+                                            //send json back to user
+                                            connection.sendUTF(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match));
+                                        });
+
+                                    }catch(e){
+                                        logger.warn(e);
+                                        //no waiting match, create one
+                                        var match_uuid = uuid.v4();
+                                        matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'players':[JSONmsg.user.user_id],'status':'waiting','match_data':JSONmsg.match_data},
+                                            function(match){//successfully created
+                                                //the returned variable match is a list, so need to change it to the first object
+                                                match = match[match.length-1];
+                                                logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
+//                                                console.dir(match);
+                                                //send json back to client
+                                                connection.sendUTF(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match));
+                                            });
+                                    }
+                                });
+                        }else if(JSONmsg.create_method == 'player'){
+
+                            //firstly, create a match
+                            var match_uuid = uuid.v4();
+                            JSONmsg.opponent_user_id.push(JSONmsg.user.user_id);
+                            //TODO: How to figure out whether the match is full or still waiting
+                            //Currently, if you invite people to play, we treat such match is already full for default.
+                            matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'players':JSONmsg.opponent_user_id,'status':'ok'},
+                            function(match){
+                                logger.info("Create Match result is "+match.stringify());
+                            });
+                        }
                         break;
                     case 'remove_match':
                         logger.info("remove_match");
