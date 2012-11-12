@@ -54,6 +54,9 @@ MatchDAO.prototype.createMatch = function(game, match, callback) {
 	}
 	this.connection.query(collectionName(game), function(collection) {
 		collection.insert(match, function(err, match) {
+            if(err){
+               console.log("Create Match error");
+            }
 			callback(match);
 		});
 	});
