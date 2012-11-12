@@ -15,7 +15,7 @@ describe('- Websocket create_match test', function(){
         wsClient.on('connect', function(connection){
             connection.sendUTF('{"msg_id":1, "type":"user_login", "user":{"data":"abcdefg"}}');
             connection.on('message', function(message){
-                console.log(message.utf8Data);
+//                console.log(message.utf8Data);
                 var JSONmsg = JSON.parse(message.utf8Data);
                 if(JSONmsg.msg_id == 1){
                     connection.sendUTF('{"msg_id":2, "user":{"user_id":"'+JSONmsg.user.user_id+'"},"type":"create_match", "game":"letter_press","create_method":"auto","max_players":2,"match_data":"aloha"}');
@@ -26,12 +26,60 @@ describe('- Websocket create_match test', function(){
             });
         });
     });
-    it("* create_match with a valid uuid, player match", function(done){
+    //add this test just to make matches number is odd, so we could run next test correctly.
+    it("* create_match with a valid uuid, auto match(repeat)", function(done){
+        var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+        wsClient.on('connect', function(connection){
+            connection.sendUTF('{"msg_id":1, "type":"user_login", "user":{"data":"abcdefg"}}');
+            connection.on('message', function(message){
+//                console.log(message.utf8Data);
+                var JSONmsg = JSON.parse(message.utf8Data);
+                if(JSONmsg.msg_id == 1){
+                    connection.sendUTF('{"msg_id":2, "user":{"user_id":"'+JSONmsg.user.user_id+'"},"type":"create_match", "game":"letter_press","create_method":"auto","max_players":2,"match_data":"aloha"}');
+                }else if(JSONmsg.msg_id == 2){
+                    should.exists(JSONmsg.match);
+                    done();
+                }
+            });
+        });
+    });
+    it("* auto create_match, find out if we got a push notification", function(done){
         var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
         wsClient.on('connect', function(connection){
             connection.sendUTF('{"msg_id":1, "type":"user_login", "user":{"data":"abcdefg"}}');
             connection.on('message', function(message){
                 console.log(message.utf8Data);
+                var JSONmsg = JSON.parse(message.utf8Data);
+                if(JSONmsg.msg_id == 1){
+                    connection.sendUTF('{"msg_id":2, "user":{"user_id":"'+JSONmsg.user.user_id+'"},"type":"create_match", "game":"letter_press","create_method":"auto","max_players":2,"match_data":"aloha"}');
+                }else if(JSONmsg.msg_id == 2){
+                    should.exists(JSONmsg.match);
+                    var wsClient2 = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+                    wsClient2.on('connect', function(connection){
+                        connection.sendUTF('{"msg_id":1, "type":"user_login", "user":{"data":"abcdefg"}}');
+                        connection.on('message', function(message){
+                            var JSONmsg2 = JSON.parse(message.utf8Data);
+                            if(JSONmsg2.msg_id == 1){
+                                connection.sendUTF('{"msg_id":2, "user":{"user_id":"'+JSONmsg2.user.user_id+'"},"type":"create_match", "game":"letter_press","create_method":"auto","max_players":2,"match_data":"aloha"}');
+                            }else if(JSONmsg2.msg_id == -1){
+                                JSONmsg2.type.should.equal("join_match");
+                                done();
+                            }
+                        });
+                    });
+                }else if (JSONmsg.msg_id == -1) {
+                    JSONmsg.type.should.equal("join_match");
+                    done();
+                }
+            });
+        });
+    });
+    it("* create_match with a valid uuid, player match", function(done){
+        var wsClient = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
+        wsClient.on('connect', function(connection){
+            connection.sendUTF('{"msg_id":1, "type":"user_login", "user":{"data":"abcdefg"}}');
+            connection.on('message', function(message){
+//                console.log(message.utf8Data);
                 var JSONmsg = JSON.parse(message.utf8Data);
                 if(JSONmsg.msg_id == 1){
                     connection.sendUTF('{"msg_id":2, "user":{"user_id":"'+JSONmsg.user.user_id+'"},"type":"create_match", "game":"letter_press","create_method":"player","max_players":2,"opponent_user_id":["1"],"match_data":"aloha"}');
@@ -61,7 +109,7 @@ describe('- Websocket create_match test', function(){
                             var JSONmsg2 = JSON.parse(message.utf8Data);
                             should.exists(JSONmsg2);
                             if(JSONmsg2.msg_id == 1){
-                                console.log("output "+JSON.stringify(JSONmsg2));
+//                                console.log("output "+JSON.stringify(JSONmsg2));
                                 connection.sendUTF('{"msg_id":2, "user":{"user_id":"'+JSONmsg2.user.user_id+'"},"type":"create_match", "game":"letter_press","create_method":"player","max_players":2,"opponent_user_id":["'+JSONmsg1.user.user_id+'"],"match_data":"aloha"}');
                             }
                         });
@@ -83,7 +131,7 @@ describe('- Websocket create_match test', function(){
                 connection.close();//close connection
             });
             connection.on('close',function(){
-                console.log("disconnected");
+//                console.log("disconnected");
                 var wsClient2 = create_ws_client(testConf.wsUrl+':'+testConf.wsPort,'brain_burst');
                 wsClient2.on('connect', function(connection){
                     connection.sendUTF('{"msg_id":1, "type":"user_login", "user":{"data":"2"}}');
@@ -97,7 +145,7 @@ describe('- Websocket create_match test', function(){
                                 connection.sendUTF('{"msg_id":1, "type":"user_login", "user":{"user_id":"'+JSONmsg1.user.user_id+'"}}');
                                 connection.on('message', function(message){
                                     var JSONmsg = JSON.parse(message.utf8Data);
-                                    console.log(message.utf8Data);
+//                                    console.log(message.utf8Data);
                                     if(JSONmsg.msg_id == -1){
                                         JSONmsg.type.should.equal("invited_match");
                                         done();
