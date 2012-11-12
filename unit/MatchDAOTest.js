@@ -97,8 +97,8 @@ describe('MatchDAOTest', function() {
 			
 			// console.log(7);
 			var dao = new MatchDAO(connection);
-			dao.pickOneWaitingMatch(game, function() {
-				dao.getMatchById(game, '1', function(m) {
+			dao.pickOneWaitingMatch(game, 'sb2', function() {
+				dao.getMatchById(game, '3', function(m) {
 					m.status.should.equal('pending');
 					done();
 				});
