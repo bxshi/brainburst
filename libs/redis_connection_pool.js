@@ -10,12 +10,7 @@ var logger = require('./logger.js')
 var redis = require("redis");
 var Conf = require('../configuration.js');
 var conf = new Conf();
-var client = redis.createClient(conf.redisConnectionPool.port,conf.redisConnectionPool.host);
-client.select(conf.redisConnectionPool.redisDB, function(err,res){
-    if(err){
-        logger.error('select redis connection pool DB failed');
-    }
-});
+var client = redis.createClient(conf.redisConnectionPool.port,conf.redisConnectionPool.host, conf.redisConnectionPool.options);
 
 
 module.exports = {
@@ -26,8 +21,7 @@ module.exports = {
       client.get(uuid, function(err, obj){
           if (err) {
               logger.error(err);
-              callback(obj);
-              return;
+              throw err;
           }
 
           callback(uuid,obj);
@@ -37,10 +31,23 @@ module.exports = {
       client.del(uuid, function(err, obj){
          if(err){
              logger.error(err);
-             callback();
-             return;
+             throw err;
          }
          callback(obj);
+      });
+  },
+  getOnline : function(uuid, callback) {
+      client.keys("*",function(err,objs){
+          if(err){
+              logger.error(err);
+              throw err;
+          }
+          for (var i in objs){
+              if (objs[i] == uuid){
+                  objs.splice(i,1);
+              }
+          }
+          callback(objs);
       });
   },
   flush : function() {
