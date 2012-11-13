@@ -6,66 +6,70 @@
  * To change this template use File | Settings | File Templates.
  */
 
+
+// There is a fucking problem that JSONStr actually a JSONObject!
+
 module.exports = {
-    user_login_builder : function() {
-        return "{}";
-        //TODO: add user_login_builder
+    user_login_builder : function(msg_id, user) {
+        var JSONObj = {'msg_id':msg_id, 'status':'ok'};
+        JSONObj.user = {'user_id':user.user_id,'user_data':user.user_data};
+        return JSONObj;
     },
     create_match_builder : function(msg_id, status, msg, match) {
-        var JSONStr = {'msg_id':msg_id,'status':status};
+        var JSONObj = {'msg_id':msg_id,'status':status};
         if(status == 'error'){
-            JSONStr.msg = msg;
+            JSONObj.msg = msg;
         }else{
-            JSONStr.match = {'match_id':match['match_id'],'players':match['players'],'match_data':match['match_data']};
+            JSONObj.match = {'match_id':match['match_id'],'players':match['players'],'match_data':match['match_data']};
         }
-        console.dir(JSONStr);
-        return JSONStr;
+        console.dir(JSONObj);
+        return JSONObj;
     },
     create_match_push_builder : function(match){
-        var JSONStr = {'msg_id':-1, 'type':'invited_match'};
-        JSONStr.match = {'match_id':match['match_id'],'players':match['players'],'match_data':match['match_data']};
-        console.dir(JSONStr);
-        return JSONStr;
+        var JSONObj = {'msg_id':-1, 'type':'invited_match'};
+        JSONObj.match = {'match_id':match['match_id'],'players':match['players'],'match_data':match['match_data']};
+        console.dir(JSONObj);
+        return JSONObj;
     },
     join_match_push_builder : function(match){
-        var JSONStr = {'msg_id':-1, 'type':'join_match'};
-        JSONStr.match = {'match_id':match['match_id'],'players':match['players']};
-        console.dir(JSONStr);
-        return JSONStr;
+        var JSONObj = {'msg_id':-1, 'type':'join_match'};
+        JSONObj.match = {'match_id':match['match_id'],'players':match['players']};
+        console.dir(JSONObj);
+        return JSONObj;
     },
     leave_match_push_builder : function(match){
-        var JSONStr = {'msg_id':-1, 'type':'leave_match'};
-        JSONStr.match = {'match_id': match['match_id'],'players':match['players']};
-        console.dir(JSONStr);
-        return JSONStr;
+        var JSONObj = {'msg_id':-1, 'type':'leave_match'};
+        JSONObj.match = {'match_id': match['match_id'],'players':match['players']};
+        console.dir(JSONObj);
+        return JSONObj;
     },
     illegal_json_builder : function(msg_id,msg){
-        var JSONStr = {'msg_id':msg_id,'status':'error','msg':msg};
-        console.dir(JSONStr);
-        return JSONStr;
+        var JSONObj = {'msg_id':msg_id,'status':'error','msg':msg};
+        console.dir(JSONObj);
+        return JSONObj;
     },
     response_json_builder : function(msg_id){
-        var JSONStr = {'msg_id':msg_id, 'status':'ok'};
-        console.dir(JSONStr);
-        return JSONStr;
+        var JSONObj = {'msg_id':msg_id, 'status':'ok'};
+        console.dir(JSONObj);
+        return JSONObj;
     },
     submit_match_push_builder : function(user_id,match){
-        var JSONStr = {'msg_id':-1, 'type':'update_match'};
-        JSONStr.match = {'match_id':match.match_id,'from_opponent':user_id,'match_data':match.match_data};
-        console.dir(JSONStr);
-        return JSONStr;
+        var JSONObj = {'msg_id':-1, 'type':'update_match'};
+        JSONObj.match = {'match_id':match.match_id,'from_opponent':user_id,'match_data':match.match_data};
+        console.dir(JSONObj);
+        return JSONObj;
     },
     get_matches_builder : function(msg_id, matches){
-        var JSONStr = {'msg_id':msg_id, 'status':'ok'};
+        var JSONObj = {'msg_id':msg_id, 'status':'ok'};
         //should we use clone to avoid reference problem?
-        JSONStr.matches = matches;
-        console.dir(JSONStr);
-        return JSONStr;
+        JSONObj.matches = matches;
+        console.dir(JSONObj);
+        return JSONObj;
     },
     online_players_builder : function(msg_id, opponents){
-        var JSONStr = {'msg_id' : msg_id, 'status' : 'ok'};
-        JSONStr.opponents = opponents;
-        console.dir(JSONStr);
-        return JSONStr;
+        var JSONObj = {'msg_id' : msg_id, 'status' : 'ok'};
+        JSONObj.opponents = opponents;
+        console.dir(JSONObj);
+        return JSONObj;
     }
 }

@@ -24,7 +24,7 @@ module.exports = {
         }
 
         // without user_id (which means register) but without user data
-        if(JSONmsg.user!=undefined && JSONmsg.user.user_id == undefined && JSONmsg.user.data == undefined){
+        if(JSONmsg.user!=undefined && JSONmsg.user.user_id == undefined && JSONmsg.user.user_data == undefined){
             return false;
         }
         return true;
@@ -58,7 +58,7 @@ module.exports = {
             return false;
         }
         //no game creation info.
-        if(JSONmsg.match_data==undefined){
+        if(JSONmsg.match==undefined || JSONmsg.match.match_data==undefined){
             console.log("no game creation info.");
             return false;
         }
@@ -70,11 +70,11 @@ module.exports = {
 
         return true;
     },
-    remove_match : function(JSONmsg){
+    leave_match : function(JSONmsg){
         if(!normalValidation(JSONmsg)){
             return false;
         }
-        if(JSONmsg.type == undefined || JSONmsg.type != 'remove_match'){
+        if(JSONmsg.type == undefined || JSONmsg.type != 'leave_match'){
             console.log("no type");
             return false;
         }
