@@ -91,6 +91,61 @@ module.exports = {
             console.log("no match or no match id");
         }
         return true;
+    },
+    submit_match : function(JSONmsg){
+        if(!normalValidation(JSONmsg)){
+            return false;
+        }
+        if(JSONmsg.type == undefined || JSONmsg.type != 'submit_match'){
+            console.log("no type");
+            return false;
+        }
+        //not login
+        if(JSONmsg.user==undefined || JSONmsg.user.user_id==undefined){
+            console.log("not login");
+            return false;
+        }
+        //no match_id or match_data
+        if(JSONmsg.game==undefined || JSONmsg.match == undefined || JSONmsg.match.match_id == undefined || JSONmsg.match.match_data == undefined){
+            console.log("no match or match_id or match_data");
+            return false;
+        }
+        return true;
+    },
+    get_matches : function(JSONmsg) {
+
+        if(!normalValidation(JSONmsg)){
+            return false;
+        }
+        if(JSONmsg.type == undefined || JSONmsg.type != 'get_matches'){
+            console.log("no type");
+            return false;
+        }
+        //not login
+        if(JSONmsg.user==undefined || JSONmsg.user.user_id==undefined){
+            console.log("not login");
+            return false;
+        }
+        if(JSONmsg.game==undefined){
+            console.log("no game string");
+            return false;
+        }
+        return true;
+    },
+    online_players : function(JSONmsg) {
+        if(!normalValidation(JSONmsg)){
+            return false;
+        }
+        if(JSONmsg.type == undefined || JSONmsg.type != 'online_players'){
+            console.log("no type");
+            return false;
+        }
+        //not login
+        if(JSONmsg.user==undefined || JSONmsg.user.user_id==undefined){
+            console.log("not login");
+            return false;
+        }
+        return true;
     }
 };
 

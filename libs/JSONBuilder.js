@@ -48,5 +48,24 @@ module.exports = {
         var JSONStr = {'msg_id':msg_id, 'status':'ok'};
         console.dir(JSONStr);
         return JSONStr;
+    },
+    submit_match_push_builder : function(user_id,match){
+        var JSONStr = {'msg_id':-1, 'type':'update_match'};
+        JSONStr.match = {'match_id':match.match_id,'from_opponent':user_id,'match_data':match.match_data};
+        console.dir(JSONStr);
+        return JSONStr;
+    },
+    get_matches_builder : function(msg_id, matches){
+        var JSONStr = {'msg_id':msg_id, 'status':'ok'};
+        //should we use clone to avoid reference problem?
+        JSONStr.matches = matches;
+        console.dir(JSONStr);
+        return JSONStr;
+    },
+    online_players_builder : function(msg_id, opponents){
+        var JSONStr = {'msg_id' : msg_id, 'status' : 'ok'};
+        JSONStr.opponents = opponents;
+        console.dir(JSONStr);
+        return JSONStr;
     }
 }
