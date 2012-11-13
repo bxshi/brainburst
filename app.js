@@ -123,12 +123,12 @@ if (!cluster.isMaster) {//actual work flow
                                     connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
                                     connection.id = JSONmsg.user.user_id;
                                     connections[connection.id] = connection;
-                                    connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '","data":"'+doc.data+'"}}');
+                                    connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '","user_data":"'+doc.user_data+'"}}');
                                     logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
                                     //acknowledge master there is a new login(then master will try send push notifications)
                                     process.send({'type':"get_push",'receiver':[connection.id]});
                                 } else {// user not exists
-                                    connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"error","msg":"user not exists"}');
+                                    connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user does not exist")));
                                     logger.warn("get a non-exist user uuid");
                                 }
                             });
@@ -138,10 +138,11 @@ if (!cluster.isMaster) {//actual work flow
                             connection_pool.setConnection(connection_uuid, process.pid);
                             var playerDAO = new player.PlayerDAO(mongoClient);
                             //TODO: add other data fields
-                            playerDAO.createPlayer({user_id:connection.id, data:JSONmsg.user.data}, function () {
+                            var user = {user_id:connection.id, user_data:JSONmsg.user.user_data};
+                            playerDAO.createPlayer(user, function () {
                                 logger.info("create user, user_id is " + connection.id);
                                 connections[connection.id] = connection;
-                                connection.sendUTF('{"msg_id":' + JSONmsg.msg_id + ',"status":"ok","user":{"user_id":"' + connection.id + '","data":"'+JSONmsg.user.data+'"}}');
+                                connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user)));
                                 logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
                                 //acknowledge master there is a new login(then master will try send push notifications)
                                 process.send({'type':"get_push",'receiver':[connection.id]});
@@ -157,6 +158,8 @@ if (!cluster.isMaster) {//actual work flow
                         }
                         var playerDAO = new player.PlayerDAO(mongoClient);
                         //validate login
+
+                        //TODO: simplify login check, just compare connection.id and user.user_id
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null){
                                 var matchDAO = new match.MatchDAO(mongoClient);
@@ -189,7 +192,7 @@ if (!cluster.isMaster) {//actual work flow
                                             logger.warn(e);
                                             //no waiting match, create one
                                             var match_uuid = uuid.v4();
-                                            matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':[JSONmsg.user.user_id],'status':'waiting','match_data':JSONmsg.match_data},
+                                            matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':[JSONmsg.user.user_id],'status':'waiting','match_data':JSONmsg.match.match_data},
                                                 function(match){//successfully created
                                                     //the returned variable match is a list, so need to change it to the first object
                                                     match = match[match.length-1];
@@ -203,18 +206,16 @@ if (!cluster.isMaster) {//actual work flow
 
                                     //firstly, create a match
                                     var match_uuid = uuid.v4();
-                                    //TODO: validate user_ids
-                                    logger.error("before"+JSONmsg.opponent_user_id);
+                                    //TODO: validate user_ids provided by client
                                     var all_players =  ce.clone(JSONmsg.opponent_user_id);
                                     all_players.push(JSONmsg.user.user_id);
-                                    logger.error("after"+JSONmsg.opponent_user_id);
                                     //DONE: How to figure out whether the match is full or still waiting
                                     //check if your invitation is already meets the max players, set match status to pending, otherwise set it to waiting .
                                     var match_status = 'waiting';
                                     if (all_players.length == JSONmsg.max_players) {
                                         match_status = 'pending';
                                     }
-                                    matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':all_players,'status':match_status,'match_data':JSONmsg.match_data},
+                                    matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':all_players,'status':match_status,'match_data':JSONmsg.match.match_data},
                                         function(match){//successfully created
                                             //the returned variable match is a list, so need to change it to the first object
                                             match = match[match.length-1];
@@ -237,10 +238,10 @@ if (!cluster.isMaster) {//actual work flow
                         //TODO: Add user login validation (this must be done before publish)
 
                         break;
-                    case 'remove_match':
-                        if(!JSONValidation.remove_match(JSONmsg)){
+                    case 'leave_match':
+                        if(!JSONValidation.leave_match(JSONmsg)){
                             logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
-                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"remove_match json illegal")));
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"leave_match json illegal")));
                             return;
                         }
                         var playerDAO = new player.PlayerDAO(mongoClient);
