@@ -6,9 +6,10 @@
  * To change this template use File | Settings | File Templates.
  */
 
-exports.testConfig = {
-  wsUrl :   "ws://127.0.0.1",
-  wsPort:   "9876"
+exports.websocket = {
+  host : "ws://127.0.0.1",
+  port : "9876",
+  protocol : "brain_burst"
 };
 
 exports.mongo = {
