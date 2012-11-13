@@ -23,6 +23,15 @@ PlayerDAO.prototype.getPlayerById = function(id, cb) {
     });
 }
 
+PlayerDAO.prototype.getPlayersById = function(id_list, cb) {
+    this.connection.query(collectionName, function(collection){
+        collection.find({'user_id':{'$in':id_list}}, function(err,docs){
+            var players = docs;
+            cb(players);
+        });
+    });
+}
+
 PlayerDAO.prototype.createPlayer = function(player, cb) {
     if(player.user_id == null)
         throw "player has no user_id";
