@@ -10,7 +10,7 @@ var wsconf = require("../libs4test/configuration.js").websocket;
 var wsCreator = require("../libs4test/client.js");
 var jsonBuilder = require("../libs4test/clientJSONBuilder.js");
 
-describe('# Remove Match Test',function(){
+describe('# Leave Match Test',function(){
 
     var worker_number = 10;
     var workers=[];
@@ -24,7 +24,7 @@ describe('# Remove Match Test',function(){
         }
         Object.keys(workers).forEach(function(i) {
             workers[i].client.on('connect',function(connection){
-                connection.sendUTF(JSON.stringify(jsonBuilder.user_login_builder(null,"create_match client"+i)));
+                connection.sendUTF(JSON.stringify(jsonBuilder.user_login_builder(null,"remove_match client"+i)));
                 connection.on('message', function(message){
                     var JSONmsg = JSON.parse(message.utf8Data);
                     should.exists(JSONmsg);
@@ -49,7 +49,7 @@ describe('# Remove Match Test',function(){
         });
     });
 
-    var test2 = "## create match by `player` method";
+    var test2 = "## leave match by `player` method";
     it(test2, function(done){
         var leaver = 0;
         var leave_push = 0;

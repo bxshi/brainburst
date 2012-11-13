@@ -2,7 +2,7 @@
  * Created with JetBrains WebStorm.
  * User: bxshi
  * Date: 12-11-13
- * Time: PM2:50
+ * Time: PM5:14
  * To change this template use File | Settings | File Templates.
  */
 var should = require("should");
@@ -10,7 +10,7 @@ var wsconf = require("../libs4test/configuration.js").websocket;
 var wsCreator = require("../libs4test/client.js");
 var jsonBuilder = require("../libs4test/clientJSONBuilder.js");
 
-describe('# Create Match Test',function(){
+describe('# Submit Match Test',function(){
 
     var worker_number = 10;
     var workers=[];
@@ -24,7 +24,7 @@ describe('# Create Match Test',function(){
         }
         Object.keys(workers).forEach(function(i) {
             workers[i].client.on('connect',function(connection){
-                connection.sendUTF(JSON.stringify(jsonBuilder.user_login_builder(null,"create_match client"+i)));
+                connection.sendUTF(JSON.stringify(jsonBuilder.user_login_builder(null,"submit_match client"+i)));
                 connection.on('message', function(message){
                     var JSONmsg = JSON.parse(message.utf8Data);
                     should.exists(JSONmsg);
@@ -48,66 +48,60 @@ describe('# Create Match Test',function(){
             });
         });
     });
-    var test1 = "## create match by `auto` method";
-    it(test1, function(done){
-        var creator = 0;
-        var joiner = 0;
-        Object.keys(workers).forEach(function(i){
-            workers[i].connection.sendUTF(JSON.stringify(jsonBuilder.create_match_builder('auto',workers[i].user,{'match_data':"worker"+i})));
-            workers[i].connection.on('message', function(message){
-                var JSONmsg = JSON.parse(message.utf8Data);
-                should.exists(JSONmsg);
-                if(JSONmsg.msg_id != -1){//it is not a push
-                    should.exists(JSONmsg.status);
-                    JSONmsg.status.should.equal('ok');
-                }
-                should.exists(JSONmsg.match);
-                if(JSONmsg.type != 'join_match') {
-                    should.exists(JSONmsg.match.match_data);
-                    JSONmsg.match.match_data.should.match(/worker[0-9]/gi);
-                    if(JSONmsg.match.match_data == "worker"+i) {
-                        creator++;
-                    }else{
-                        joiner++;
-                    }
 
-                    if(creator+joiner == worker_number){
-                        done();
-                    }
-                }
-            });
-        });
-    });
-
-    var test2 = "## create match by `player` method";
+    var test2 = "## submit match by `player` method";
     it(test2, function(done){
-        var pusher = 0;
-        var creator = 0;
+        var get_opponent_push = 0;
+        var submit = 0;
         Object.keys(workers).forEach(function(i){
+            var lock = false;
             var opponent_index = (parseInt(i) < (worker_number-1))?parseInt(i)+1:0;
             var invitation_index = (parseInt(i) > 0)?parseInt(i)-1:worker_number-1;
             workers[i].connection.sendUTF(JSON.stringify(jsonBuilder.create_match_builder('player',workers[i].user,{'match_data':"worker"+i},[workers[opponent_index].user.user_id])));
             workers[i].connection.on('message', function(message){
                 var JSONmsg = JSON.parse(message.utf8Data);
                 should.exists(JSONmsg);
+                if(JSONmsg.msg_id == 4){
+                    should.exists(JSONmsg.status);
+                    JSONmsg.status.should.equal('ok');
+                    return;
+                }
                 should.exists(JSONmsg.match);
                 should.exists(JSONmsg.match.match_id);
                 should.exists(JSONmsg.match.match_data);
-                should.exists(JSONmsg.match.players);
-                if(JSONmsg.msg_id == -1){//it is a push
+                if(JSONmsg.msg_id == -1&&JSONmsg.type=="invited_match"){//it is a push
+                    should.exists(JSONmsg.match.players);
                     should.exists(JSONmsg.type);
                     JSONmsg.type.should.equal("invited_match");
                     JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
-                    pusher++;
                 }else if(JSONmsg.msg_id == 2){
+                    should.exists(JSONmsg.match.players);
                     should.exists(JSONmsg.status);
                     JSONmsg.status.should.equal('ok');
                     JSONmsg.match.match_data.should.equal('worker'+i);
                     JSONmsg.match.players.should.include(workers[i].user.user_id);
-                    creator++;
-                }
-                if(creator == 10 && pusher == 10){
-                    done();
+                    JSONmsg.match.match_data = "round1";
+                    workers[i].connection.sendUTF(JSON.stringify(jsonBuilder.submit_match_builder(workers[i].user,JSONmsg.match)));
+                    submit++;
+                    if(get_opponent_push==worker_number&&submit==worker_number){
+                        done();
+                    }
+                }else if(JSONmsg.msg_id == -1 && JSONmsg.type == "update_match"){
+                    should.exists(JSONmsg.match.from_opponent);
+//                    console.log("js:"+JSONmsg.match.from_opponent+" worker:"+workers[i].user.user_id+" invitation:"+workers[invitation_index].user.user_id+" opponent:"+workers[opponent_index].user.user_id);
+                    if(JSONmsg.match.from_opponent == workers[i].user.user_id){
+                        JSONmsg.match.match_data.should.equal("round1");
+                    }else if(JSONmsg.match.from_opponent == workers[invitation_index].user.user_id && lock==false){
+                        get_opponent_push++;
+                        if(get_opponent_push==worker_number&&submit==worker_number){
+                            done();
+                        }
+                        workers[i].connection.sendUTF(JSON.stringify(jsonBuilder.submit_match_builder(workers[i].user,JSONmsg.match)));
+                        lock=true;
+                    }
+//                    JSONmsg.match.from_opponent.should.equal(workers[invitation_index].user.user_id);
+//                    lock=true;
+//                    get_opponent_push++;
                 }
             });
         });

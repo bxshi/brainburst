@@ -47,7 +47,16 @@ module.exports = {
         return JSONObj;
     },
     remove_match_error_builder : function(){},
-    submit_match_builder : function(){},
+    submit_match_builder : function(user,match){
+        var JSONObj = {'msg_id':4,'type':"submit_match",'game':"test_game"};
+        if(user){
+            JSONObj.user = user;
+        }
+        if(match){
+            JSONObj.match = match;
+        }
+        return JSONObj;
+    },
     submit_match_error_builder : function(){},
     get_matches_builder : function(){},
     get_matches_error_builder : function(){},
