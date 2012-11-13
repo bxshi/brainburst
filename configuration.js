@@ -25,14 +25,15 @@ module.exports = function(){
                     host : '127.0.0.1',
                     port : 6379,
                     options : {
-                        database : 'letter_press_test'
+                        database : 'letter_press_push'
                     },
-                    redisPushDB:1
                 },
                 redisConnectionPool:{
                     host:'127.0.0.1',
                     port:6379,
-                    redisDB:0
+                    options : {
+                        database : 'letter_press_connection_pool'
+                    }
                 }
             }
         default:
