@@ -149,86 +149,93 @@ if (!cluster.isMaster) {//actual work flow
                         }
                         break;
 
-                    //TODO: Add login validation(uuid in pool)
-
                     case 'create_match':
                         if(!JSONValidation.create_match(JSONmsg)){
                             logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"create_match json illegal")));
                             return;
                         }
-                        //TODO: Add user login validation (this must be done before publish)
-                        var matchDAO = new match.MatchDAO(mongoClient);
-                        if(JSONmsg.create_method == 'auto'){
-                                //search for existing waiting match
-                                matchDAO.pickOneWaitingMatch(JSONmsg.game, function(match){
-                                    //TODO: Maybe need add error handling?
-                                    try{
-                                        //the returned variable match is not a list but a single object
-                                        if(match==undefined)
-                                            throw "no waiting matches";
-                                        //TODO: add check to exclude game created by user its own.
-                                        console.dir(match);
-                                        //if get a match with waiting status, join it
-                                        var push_players = ce.clone(match['players']);
-                                        match['players'][match['players'].length] = JSONmsg.user.user_id;
-                                        if (match['players'].length == match['max_players']){//if there is enough people here
-                                            match['status'] = 'pending';
-                                        }
-                                        console.log(match['players']);
-                                        matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
-                                            //send json back to user
-                                            connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)));
-                                            //DONE:send push to others
-                                            //If you want send push to all players in this game, change receiver from `push_players` to `match['players']`
-                                            process.send({'type':'new_push', 'receiver':push_players, 'json':JSONBuilder.join_match_push_builder(match)});
-                                        });
-
-                                    }catch(e){
-                                        logger.warn(e);
-                                        //no waiting match, create one
-                                        var match_uuid = uuid.v4();
-                                        matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':[JSONmsg.user.user_id],'status':'waiting','match_data':JSONmsg.match_data},
-                                            function(match){//successfully created
-                                                //the returned variable match is a list, so need to change it to the first object
-                                                match = match[match.length-1];
-                                                logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
-                                                //send json back to client
+                        var playerDAO = new player.PlayerDAO(mongoClient);
+                        //validate login
+                        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+                            if(player != null){
+                                var matchDAO = new match.MatchDAO(mongoClient);
+                                if(JSONmsg.create_method == 'auto'){
+                                    //search for existing waiting match
+                                    matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function(match){
+                                        //TODO: Maybe need add error handling?
+                                        try{
+                                            //the returned variable match is not a list but a single object
+                                            if(match==undefined)
+                                                throw "no waiting matches";
+                                            //TODO: add check to exclude game created by user its own.
+                                            console.dir(match);
+                                            //if get a match with waiting status, join it
+                                            var push_players = ce.clone(match['players']);
+                                            match['players'][match['players'].length] = JSONmsg.user.user_id;
+                                            if (match['players'].length == match['max_players']){//if there is enough people here
+                                                match['status'] = 'pending';
+                                            }
+                                            console.log(match['players']);
+                                            matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
+                                                //send json back to user
                                                 connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)));
+                                                //DONE:send push to others
+                                                //If you want send push to all players in this game, change receiver from `push_players` to `match['players']`
+                                                process.send({'type':'new_push', 'receiver':push_players, 'json':JSONBuilder.join_match_push_builder(match)});
                                             });
+
+                                        }catch(e){
+                                            logger.warn(e);
+                                            //no waiting match, create one
+                                            var match_uuid = uuid.v4();
+                                            matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':[JSONmsg.user.user_id],'status':'waiting','match_data':JSONmsg.match_data},
+                                                function(match){//successfully created
+                                                    //the returned variable match is a list, so need to change it to the first object
+                                                    match = match[match.length-1];
+                                                    logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
+                                                    //send json back to client
+                                                    connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)));
+                                                });
+                                        }
+                                    });
+                                }else if(JSONmsg.create_method == 'player'){
+
+                                    //firstly, create a match
+                                    var match_uuid = uuid.v4();
+                                    //TODO: validate user_ids
+                                    logger.error("before"+JSONmsg.opponent_user_id);
+                                    var all_players =  ce.clone(JSONmsg.opponent_user_id);
+                                    all_players.push(JSONmsg.user.user_id);
+                                    logger.error("after"+JSONmsg.opponent_user_id);
+                                    //DONE: How to figure out whether the match is full or still waiting
+                                    //check if your invitation is already meets the max players, set match status to pending, otherwise set it to waiting .
+                                    var match_status = 'waiting';
+                                    if (all_players.length == JSONmsg.max_players) {
+                                        match_status = 'pending';
                                     }
-                                });
-                        }else if(JSONmsg.create_method == 'player'){
+                                    matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':all_players,'status':match_status,'match_data':JSONmsg.match_data},
+                                        function(match){//successfully created
+                                            //the returned variable match is a list, so need to change it to the first object
+                                            match = match[match.length-1];
+                                            logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
+                                            //send json back to client
+                                            connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)));
 
-                            //firstly, create a match
-                            var match_uuid = uuid.v4();
-                            //TODO: validate user_ids
-                            logger.error("before"+JSONmsg.opponent_user_id);
-                            var all_players =  ce.clone(JSONmsg.opponent_user_id);
-                            all_players.push(JSONmsg.user.user_id);
-                            logger.error("after"+JSONmsg.opponent_user_id);
-                            //DONE: How to figure out whether the match is full or still waiting
-                            //check if your invitation is already meets the max players, set match status to pending, otherwise set it to waiting .
-                            var match_status = 'waiting';
-                            if (all_players.length == JSONmsg.max_players) {
-                                match_status = 'pending';
+                                            //DONE: add create_match's push notifications
+                                            //**This only pushes to players who were invited (exclude the one who create this match)**
+                                            //if you want to include the creator, change receiver from `JSONmsg.opponent_user_id` to `all_players`
+                                            logger.warn("push_receiver"+JSONmsg.opponent_user_id);
+                                            process.send({'type':'new_push', 'receiver':JSONmsg.opponent_user_id, 'json':JSONBuilder.create_match_push_builder(match)});
+
+                                        });
+                                }
+                            }else{
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
                             }
-                            matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':all_players,'status':match_status,'match_data':JSONmsg.match_data},
-                                function(match){//successfully created
-                                    //the returned variable match is a list, so need to change it to the first object
-                                    match = match[match.length-1];
-                                    logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
-                                    //send json back to client
-                                    connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)));
+                        });
+                        //TODO: Add user login validation (this must be done before publish)
 
-                                    //DONE: add create_match's push notifications
-                                    //**This only pushes to players who were invited (exclude the one who create this match)**
-                                    //if you want to include the creator, change receiver from `JSONmsg.opponent_user_id` to `all_players`
-                                    logger.warn("push_receiver"+JSONmsg.opponent_user_id);
-                                    process.send({'type':'new_push', 'receiver':JSONmsg.opponent_user_id, 'json':JSONBuilder.create_match_push_builder(match)});
-
-                                });
-                        }
                         break;
                     case 'remove_match':
                         if(!JSONValidation.remove_match(JSONmsg)){
@@ -236,45 +243,117 @@ if (!cluster.isMaster) {//actual work flow
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"remove_match json illegal")));
                             return;
                         }
-                        //TODO: validate if logged in
+                        var playerDAO = new player.PlayerDAO(mongoClient);
+                        //validate login
+                        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+                            if(player != null){
+                                var matchDAO = new match.MatchDAO(mongoClient);
+                                //TODO: validate match_id
+                                matchDAO.getMatchById(JSONmsg.game, JSONmsg.match.match_id, function(match){
+                                    try{
+                                        if(match==undefined){
+                                            throw "no such match";
+                                        }
+                                        //remove user
+                                        logger.error("before remove players:"+JSON.stringify(match.players));
+                                        for(var i in match.players) {
+                                            if (match.players[i] == JSONmsg.user.user_id){
+                                                match.players.splice(i,1);
+                                            }
+                                        }
+                                        logger.error("after remove players:"+JSON.stringify(match.players));
+                                        match.status = "end";
 
-                        var matchDAO = new match.MatchDAO(mongoClient);
-                        //TODO: validate match_id
-                        matchDAO.getMatchById(JSONmsg.game, JSONmsg.match.match_id, function(match){
-                            try{
-                                if(match==undefined){
-                                    throw "no such match";
-                                }
-                                //remove user
-                                for(var i in match.players) {
-                                    if (match.players[i] == JSONmsg.user.user_id){
-                                        delete match.players[i];
+                                        matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function(){
+                                            connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
+                                            //send `leave_match` push
+                                            //CHeck players, if it is empty, do not make push
+                                            if(match.players.length>0){
+                                                process.send({'type':'new_push', 'receiver':match.players, 'json':JSONBuilder.leave_match_push_builder(match)});
+                                            }
+                                        });
+
+                                    }catch(e){
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)));
                                     }
-                                }
-                                match.status = "end";
-
-                                matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function(){
-                                    connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
-                                    //send `leave_match` push
-                                    process.send({'type':'new_push', 'receiver':match.players, 'json':JSONBuilder.leave_match_push_builder(match)});
                                 });
-
-                            }catch(e){
-                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)));
+                            }else{
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
                             }
+
                         });
                         break;
                     case 'submit_match':
-                        logger.info("submit_match");
-                        connection.sendUTF('{"status":"ok"}');
+                        if(!JSONValidation.submit_match(JSONmsg)){
+                            logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"submit_match json illegal")));
+                            return;
+                        }
+                        var playerDAO = new player.PlayerDAO(mongoClient);
+                        //validate login
+                        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+                            if(player != null){
+                                var matchDAO = new match.MatchDAO(mongoClient);
+                                matchDAO.getMatchById(JSONmsg.game,JSONmsg.match.match_id, function(match){
+                                    if(match != null){
+                                        //TODO do we need validation about who should submit match data?
+                                        match.match_data = JSONmsg.match.match_data;
+                                        matchDAO.updateMatch(JSONmsg.game,JSONmsg.match.match_id,match,function(){
+                                            connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
+                                            //push to all players
+                                            process.send({'type':'new_push','receiver':match.players,'json':JSONBuilder.submit_match_push_builder(JSONmsg.user.user_id,match)});
+                                        });
+                                    }else{
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")));
+                                    }
+                                });
+                            }else{
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
+                            }
+                        });
                         break;
                     case 'get_matches':
-                        logger.info("get_matches");
-                        connection.sendUTF('{"status":"ok"}');
+                        if(!JSONValidation.get_matches(JSONmsg)){
+                            logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"get_matches json illegal")));
+                            return;
+                        }
+                        var playerDAO = new player.PlayerDAO(mongoClient);
+                        //validate login
+                        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+                            if(player != null){
+                                var matchDAO = new match.MatchDAO(mongoClient);
+                                matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,0,100,function(matches){
+                                    if (matches != null){
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches)));
+                                    }else{
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"no match for this user")));
+                                    }
+                                });
+                            }else{
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
+                            }
+                        });
                         break;
-                    case 'online_players' :
-                        logger.info("online_players");
-                        connection.sendUTF('{"status":"ok"}');
+                    case 'online_players':
+                        if(!JSONValidation.online_players(JSONmsg)){
+                            logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg));
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"online_players json illegal")));
+                            return;
+                        }
+                        var playerDAO = new player.PlayerDAO(mongoClient);
+                        //validate login
+                        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+                            if(player != null){
+                                connection_pool.getOnline(JSONmsg.user.user_id, function(opponents_user_ids){
+                                    playerDAO.getPlayersById(opponents_user_ids,function(opponents){
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents)));
+                                    });
+                                });
+                            }else{
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
+                            }
+                        });
                         break;
                 }
 
