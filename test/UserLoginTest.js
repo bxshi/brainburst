@@ -89,6 +89,36 @@ describe('# User Login Test',function(){
         });
     });
 
+    it("## login with valid user_id, then change it to other user's user_id",function(done){
+        var count=0;
+        Object.keys(workers).forEach(function(i) {
+            workers[i].connection.sendUTF(JSON.stringify(jsonBuilder.user_login_builder(null,"login client"+i)));
+            workers[i].connection.on('message', function(message){
+                var JSONmsg = JSON.parse(message.utf8Data);
+                should.exists(JSONmsg);
+                switch(JSONmsg.msg_id){
+                    case 1:
+                        JSONmsg.status.should.not.equal('error');
+                        should.exists(JSONmsg.user);
+                        should.exists(JSONmsg.user.user_id);
+                        should.exists(JSONmsg.user.user_data);
+                        workers[i].user = JSONmsg.user;
+                        if(count<worker_number){
+                            count++;
+                        }
+                        if(count==worker_number){
+                            workers[0].connection.sendUTF(JSON.stringify(jsonBuilder.get_matches_builder(workers[1].user,'123')));
+                        }
+                        break;
+                    case 5:
+                        should.exists(JSONmsg.status);
+                        JSONmsg.status.should.equal('error');
+                        done();
+                }
+            });
+        });
+    });
+
     //close connections
     afterEach(function(done){
         var count = 0;
