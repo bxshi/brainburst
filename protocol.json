@@ -1,0 +1,147 @@
+[
+    {//User Send
+        "msg_id" : 1,
+        "type" : "user_login",
+        "user" : {
+            "user_id" : "UUID, if empty, it means register a new user",
+            "user_data" : "client defined, must be string"
+        }
+    },
+    {//User Get
+        "msg_id" : 1,
+        "user" : {
+            "user_id" : "UUID",
+            "user_data" : "client defined, must be string"
+        },
+        "status" : "ok||error",
+        "msg" : "if status is error, this will show details about error"
+    },
+    {//User Send
+        "msg_id" : 2,
+        "user" : {
+            "user_id" : "UUID",
+            "user_data" : "client defined, must be string"
+        },
+        "game" : "game string",
+        "type" : "create_match",
+        "create_method" : "auto||player",
+        "opponent_user_id" : ["UUID1","UUID2","..."],
+        "max_players" : 2,
+        "match" : {
+            "match_data" : "client defined, must be string"
+        }
+    },
+    {//User Get
+        "msg_id" : 2,
+        "status" : "ok||error",
+        "msg" : "if status is error, this will show details about error",
+        "match" : {
+            "match_id" : "match_UUID",
+            "players" : ["UUID1","UUID2","..."],
+            "match_data" : "client defined, must be string"
+        }
+    },
+    {//if other players send create_match and invite you, you will get this.
+        "msg_id" : -1,
+        "type" : "invited_match",
+        "user" : {
+            "user_id" : "UUID",
+            "user_data" : "client defined, must be string"
+        },
+        "match" : {
+            "match_id" : "match_UUID",
+            "players" : ["UUID1", "UUID2", "..."],
+            "match_data" : "client defined, must be string"
+        }
+    },
+    {//If you create a new match with auto, when a new player gets in, you will get this.
+        "msg_id" : -1,
+        "type" : "join_match",
+        "match" : {
+            "match_id" : "match_UUID",
+            "players" : ["UUID1", "UUID2", "..."]
+        }
+    },
+    {//If you want to remove a match from your match list, send this, and others will get a notice push.
+        "msg_id" : 3,
+        "type" : "leave_match",
+        "game" : "game string",
+        "user" : {
+            "user_id" : "UUID",
+            "user_data" : "client defined, must be string"
+        },
+        "match" : {
+            "match_id" : "match_UUID"
+        }
+    },
+    {//If your opponent discard his match, you will got this and no submit_match could be send.
+        "msg_id" : -1,
+        "type" : "leave_match",
+        "match" : {
+            "match_id" : "match_UUID",
+            "players" : ["UUID1", "UUID2", "..."]
+        }
+    },
+    {//submit your game data
+        "msg_id" : 4,
+        "type" : "submit_match",
+        "user" : {
+            "user_id" : "user UUID"
+        },
+        "game" : "game string",
+        "match" : {
+            "match_id" : "match_UUID",
+            "match_data" : "client defined"
+        }
+    },
+    {//when a submit_match is sent to server, all players involved in this match will got this push.
+        "msg_id" : -1,
+        "type" : "update_match",
+        "match" : {
+            "match_id" : "match_UUID",
+            "from_opponent" : "user_uuid",
+            "match_data" : "client defined"
+        }
+    },
+    {//user send to get list of matches
+        "msg_id" : 5,
+        "type" : "get_matches",
+        "game" : "game string",
+        "user" : {
+            "user_id": "userUUID"
+        }
+    },
+    {//user will get this.
+        "msg_id" : 5,
+        "status" : "ok|error",
+        "msg" : "if status is error, this will show details about error",
+        "matches" : [{
+            "match_id":"UUID",
+            "players": ["UUID1","UUID2","..."],
+            "match_data":"client defined"
+        },{
+            "match_id":"UUID",
+            "players": ["UUID1","UUID2","..."],
+            "match_data":"client defined"
+        },"..."]
+    },
+    {//user send to get online gamers
+        "msg_id" : 6,
+        "type" : "online_players",
+        "user" : {
+            "user_id" : "user UUID"
+        }
+    },
+    {//user get online gamers
+        "msg_id" : 6,
+        "status" : "ok||error",
+        "msg" : "if status is error, this will show details about error",
+        "opponents" :[{
+            "user_id" : "user UUID",
+            "data" : "client defined"
+        },{
+            "user_id" : "user UUID",
+            "data" : "client defined"
+        },"..."]
+    }
+]
