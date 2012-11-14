@@ -76,15 +76,6 @@ if (!cluster.isMaster) {//actual work flow
 
     wsServer.on('request', function (request) {
 
-        console.dir(request);
-        request.on('data',function(chunk){
-            console.log("REQUEST BODY:"+chunk);
-        });
-
-        request.on('close', function(){
-            console.log("END");
-        });
-
         try {
             var connection = request.accept('brain_burst', request.origin);
         } catch (e) {
