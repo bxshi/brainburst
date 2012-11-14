@@ -25,8 +25,12 @@ PlayerDAO.prototype.getPlayerById = function(id, cb) {
 
 PlayerDAO.prototype.getPlayersById = function(id_list, cb) {
     this.connection.query(collectionName, function(collection){
-        collection.find({'user_id':{'$in':id_list}}, function(err,docs){
+        collection.find({'user_id':{'$in':id_list}}).toArray(function(err,docs){
+            if(err){
+                throw err;
+            }
             var players = docs;
+            console.log("WTF"+JSON.stringify(docs));
             cb(players);
         });
     });
