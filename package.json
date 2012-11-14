@@ -16,7 +16,8 @@
         "node-uuid" : "*",
         "async" : "*",
         "mongodb" : "*",
-        "cloneextend" : "*"
+        "cloneextend" : "*",
+        "fs" : "*"
     },
 
     "engines" : "0.8.x"
