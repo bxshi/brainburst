@@ -9,7 +9,31 @@
 module.exports = function(){
     switch(process.env.NODE_ENV){
         case 'deployment':
-            return {}
+            return {
+                WebSocketPort   :   9988,
+                mongo:{
+                    host : '127.0.0.1',
+                    port : 27017,
+                    db : 'letter_press_deploy',
+                    options : {
+                        auto_reconnect : true
+                    }
+                },
+                redis:{
+                    host : '127.0.0.1',
+                    port : 6379,
+                    options : {
+                        database : 'letter_press_push_deploy'
+                    }
+                },
+                redisConnectionPool:{
+                    host:'127.0.0.1',
+                    port:6379,
+                    options : {
+                        database : 'letter_press_connection_pool_deploy'
+                    }
+                }
+            }
         case 'development':
             return {
                 WebSocketPort   :   9876,
@@ -26,7 +50,7 @@ module.exports = function(){
                     port : 6379,
                     options : {
                         database : 'letter_press_push'
-                    },
+                    }
                 },
                 redisConnectionPool:{
                     host:'127.0.0.1',
