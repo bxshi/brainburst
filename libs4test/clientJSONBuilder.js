@@ -58,8 +58,20 @@ module.exports = {
         return JSONObj;
     },
     submit_match_error_builder : function(){},
-    get_matches_builder : function(){},
+    get_matches_builder : function(user){
+        var JSONObj = {'msg_id':5,'type':"get_matches",'game':"test_game"};
+        if(user){
+            JSONObj.user = user;
+        }
+        return JSONObj;
+    },
     get_matches_error_builder : function(){},
-    online_players_builder : function(){},
+    online_players_builder : function(user){
+        var JSONObj = {'msg_id':6, 'type':"online_players"};
+        if(user){
+            JSONObj.user = user;
+        }
+        return JSONObj;
+    },
     online_players_error_builder : function(){}
 };
