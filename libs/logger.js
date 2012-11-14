@@ -7,11 +7,17 @@
  */
 
 var clc = require('cli-color');
+var debug = clc.blue.underline;
 var info = clc.green;
 var warning = clc.yellow.bold.bgCyan;
 var error = clc.red.bold.bgBlack;
 var time = clc.underline;
 module.exports={
+    debug:function(msg){
+        if(process.env.NODE_ENV=='development'){
+            console.log(time("["+new Date()+"]")+"["+process.pid+"] "+debug(msg));
+        }
+    },
     info:function(msg){
         if(process.env.NODE_ENV=='development'){
             console.log(time("["+new Date()+"]")+"["+process.pid+"] "+info(msg));
