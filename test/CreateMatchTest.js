@@ -113,6 +113,8 @@ describe('# Create Match Test',function(){
         });
     });
 
+    it("## invite non-exist user to play");
+
     //close connections
     afterEach(function(done){
         var count = 0;
