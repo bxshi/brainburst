@@ -62,13 +62,19 @@ module.exports = {
     get_matches_builder : function(msg_id, matches){
         var JSONObj = {'msg_id':msg_id, 'status':'ok'};
         //should we use clone to avoid reference problem?
-        JSONObj.matches = matches;
+        JSONObj.matches = [];
+        for(var i =0;i<matches.length;i++){
+            JSONObj.matches[i] = {'match_id':matches[i].match_id,'players':matches[i].players,'match_data':matches[i].match_data};
+        }
         console.dir(JSONObj);
         return JSONObj;
     },
     online_players_builder : function(msg_id, opponents){
         var JSONObj = {'msg_id' : msg_id, 'status' : 'ok'};
-        JSONObj.opponents = opponents;
+        JSONObj.opponents = [];
+        for(var i=0;i<opponents.length;i++){
+            JSONObj.opponents[i] = {'user_id':opponents[i].user_id,'user_data':opponents[i].user_data};
+        }
         console.dir(JSONObj);
         return JSONObj;
     }
