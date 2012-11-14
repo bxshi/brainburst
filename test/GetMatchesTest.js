@@ -103,6 +103,22 @@ describe('# Get Matches Test',function(){
         });
     });
 
+    it("## Get matches when user do not have any match.", function(done){
+        workers[0].connection.sendUTF(JSON.stringify(jsonBuilder.get_matches_builder(workers[0].user)));
+        workers[0].connection.on('message',function(message){
+            var JSONmsg = JSON.parse(message.utf8Data);
+            should.exists(JSONmsg);
+            should.exists(JSONmsg.status);
+            JSONmsg.status.should.equal('ok');
+            if(JSONmsg.msg_id == 5){
+                //here it represents as undefined, but in JSON string it is a [] (empty array)
+                should.not.exists(JSONmsg.match);
+                done();
+            }
+        });
+
+    });
+
     //close connections
     afterEach(function(done){
         var count = 0;

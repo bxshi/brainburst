@@ -92,6 +92,17 @@ describe('# Leave Match Test',function(){
         });
     });
 
+    it("## leave a non exist match",function(done){
+        workers[0].connection.sendUTF(JSON.stringify(jsonBuilder.leave_match_builder(workers[0].user,'12313')));
+        workers[0].connection.on('message',function(message){
+            var JSONmsg = JSON.parse(message.utf8Data);
+            should.exists(JSONmsg);
+            should.exists(JSONmsg.status);
+            JSONmsg.status.should.equal('error');
+            done();
+        });
+    });
+
     //close connections
     afterEach(function(done){
         var count = 0;
