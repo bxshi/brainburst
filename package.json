@@ -19,5 +19,5 @@
         "cloneextend" : "*"
     },
 
-    "engines" : "0.6.x"
+    "engines" : "0.8.x"
 }
