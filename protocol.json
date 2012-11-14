@@ -138,10 +138,10 @@
         "msg" : "if status is error, this will show details about error",
         "opponents" :[{
             "user_id" : "user UUID",
-            "data" : "client defined"
+            "user_data" : "client defined"
         },{
             "user_id" : "user UUID",
-            "data" : "client defined"
+            "user_data" : "client defined"
         },"..."]
     }
 ]
