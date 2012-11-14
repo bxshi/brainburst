@@ -10,10 +10,11 @@ var should = require("should");
 var wsconf = require("../libs4test/configuration.js").websocket;
 var wsCreator = require("../libs4test/client.js");
 var jsonBuilder = require("../libs4test/clientJSONBuilder.js");
+var worker_number = require("../libs4test/configuration.js").worker_number;
+
 
 describe('# User Login Test',function(){
 
-    var worker_number = 10;
     var workers=[];
 
     //create connections

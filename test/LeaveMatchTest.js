@@ -9,10 +9,11 @@ var should = require("should");
 var wsconf = require("../libs4test/configuration.js").websocket;
 var wsCreator = require("../libs4test/client.js");
 var jsonBuilder = require("../libs4test/clientJSONBuilder.js");
+var worker_number = require("../libs4test/configuration.js").worker_number;
+
 
 describe('# Leave Match Test',function(){
 
-    var worker_number = 10;
     var workers=[];
 
     //create connections and login
@@ -85,7 +86,7 @@ describe('# Leave Match Test',function(){
                     JSONmsg.match.players.should.not.include(workers[invitation_index].user.user_id);
                     leave_push++;
                 }
-                if(leaver == 10 && leave_push == 10){
+                if(leaver == worker_number && leave_push == worker_number){
                     done();
                 }
             });
