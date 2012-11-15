@@ -30,7 +30,7 @@ PlayerDAO.prototype.getPlayersById = function(id_list, cb) {
                 throw err;
             }
             var players = docs;
-            console.log("WTF"+JSON.stringify(docs));
+//            console.log("WTF"+JSON.stringify(docs));
             cb(players);
         });
     });
