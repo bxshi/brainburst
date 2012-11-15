@@ -8,28 +8,32 @@ var MatchDAO = function(connection) {
 	this.connection = connection;
 	this.indexStatus = {};
 }
+MatchDAO.prototype.setIndexStatus = function(game){
+    this.indexStatus[game] = true;
+}
 MatchDAO.prototype.ensureIndex = function(game) {
-	if(this.indexStatus[game] == null) {	
+    var parent = this;
+	if(this.indexStatus[game] != true) {
 		this.connection.query(collectionName(game), function(collection){
 			collection.ensureIndex({"match_id" : 1} ,function(err, msg) {
 				if(err) {
-					console.log('MatchDAO index err :' + err);
+					console.log('MatchDAO match_id index err :' + err);
 					throw err;
 				}
 			});
 			collection.ensureIndex({"players" : 1} ,function(err, msg) {
 				if(err) {
-					console.log('MatchDAO index err :' + err);
+					console.log('MatchDAO players index err :' + err);
 					throw err;
 				}
 			});
 			collection.ensureIndex({"status" : 1} ,function(err, msg) {
 				if(err) {
-					console.log('MatchDAO index err :' + err);
+					console.log('MatchDAO status index err :' + err);
 					throw err;
 				}
 			});
-			this.indexStatus[game] = true;
+            parent.setIndexStatus(game);
 		});
 	}
 }
@@ -84,7 +88,7 @@ MatchDAO.prototype.updateMatch = function(game, match_id, match, callback) {
 
 MatchDAO.prototype.pickOneWaitingMatch = function(game, playerId, callback) {
 	this.connection.query(collectionName(game), function(collection) {
-		collection.findAndModify({'$and' : [{players : {'$nin' : [playerId]}}, {status : 'waiting'}]}, {}, {'$set' : {'status' : 'pending'}}, function(err,object) {
+		collection.findAndModify({'$and' : [{players : {'$nin' : [playerId]}}, {status : 'waiting'}]}, {}, {'$set' : {'status' : 'pending'}},{}, function(err,object) {
 			if(err)
 				throw err;
 			callback(object);
