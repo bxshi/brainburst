@@ -51,7 +51,7 @@ module.exports = {
       });
   },
   flush : function() {
-      client.flushall();
+      client.flushdb();
   },
   quit  :   function() {
     client.quit();
