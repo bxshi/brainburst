@@ -4,7 +4,7 @@ var MatchDAO = require('../libs/MatchDAO').MatchDAO;
 var config = require('../TestConfig');
 var MongoDBConnection = require('../libs/MongoDBConnection').MongoDBConnection;
 var connection = new MongoDBConnection(config.mongo);
-var game = 'fuckgame';
+var game = "fuckgame";
 
 
 describe('MatchDAOTest', function() {
@@ -35,6 +35,7 @@ describe('MatchDAOTest', function() {
 					done();
 					return;
 				}
+                dao.ensureIndex(game);
 				dao.createMatch(game, matches[num], function() {
 					create(num+1);	
 				});
