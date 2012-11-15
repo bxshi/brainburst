@@ -4,7 +4,9 @@ A Turn-based game server in Node.js
 
 ---
 
-**Still Under Development, please use `Under_Dev` branch until a usable version came out**
+**A stable version is out, please check out `master` to use.**
+
+Still Under Development, please use `Under_Dev` branch to get latest one. (may buggy)
 ---
 
 ##Installation
