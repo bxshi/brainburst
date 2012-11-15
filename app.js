@@ -126,7 +126,7 @@ if (!cluster.isMaster) {//actual work flow
                             //DONE: change error message to a list, and get error from it
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user_login json illegal")), function(err){
                                 if(err){
-                                    loger.warn("JSON send error! err message:"+err);
+                                    logger.warn("JSON send error! err message:"+err);
                                 }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
@@ -144,7 +144,7 @@ if (!cluster.isMaster) {//actual work flow
                                     connections[connection.id] = connection;
                                     connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,{'user_id':connection.id,'user_data':doc.user_data})),function(err){
                                         if(err){
-                                            loger.warn("JSON send error! err message:"+err);
+                                            logger.warn("JSON send error! err message:"+err);
                                         }
                                         logger.debug("send "+connection.id+" a JSON:"+JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,{'user_id':connection.id,'user_data':doc.user_data})));
                                     });
@@ -155,7 +155,7 @@ if (!cluster.isMaster) {//actual work flow
                                 } else {// user not exists
                                     connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user does not exist")), function(err){
                                         if(err){
-                                            loger.warn("JSON send error! err message:"+err);
+                                            logger.warn("JSON send error! err message:"+err);
                                         }
                                         logger.warn("get a non-exist user uuid "+JSONmsg.user.user_id+", connection from "+connection.remoteAddress);
                                     });
@@ -172,7 +172,7 @@ if (!cluster.isMaster) {//actual work flow
                                 connections[connection.id] = connection;
                                 connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user)), function(err){
                                     if(err){
-                                        loger.warn("JSON send error! err message:"+err);
+                                        logger.warn("JSON send error! err message:"+err);
                                     }
                                     logger.debug("send "+user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user)));
                                 });
@@ -189,7 +189,7 @@ if (!cluster.isMaster) {//actual work flow
                         if(!JSONValidation.create_match(JSONmsg)){
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"create_match json illegal")),function(err){
                                 if(err){
-                                    loger.warn("JSON send error! err message:"+err);
+                                    logger.warn("JSON send error! err message:"+err);
                                 }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
@@ -220,7 +220,7 @@ if (!cluster.isMaster) {//actual work flow
                                                 //send json back to user
                                                 connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(err){
                                                     if(err){
-                                                        loger.warn("JSON send error! err message:"+err);
+                                                        logger.warn("JSON send error! err message:"+err);
                                                     }
                                                     logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)));
                                                 });
@@ -249,7 +249,7 @@ if (!cluster.isMaster) {//actual work flow
                                                     //send json back to client
                                                     connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(err){
                                                         if(err){
-                                                            loger.warn("JSON send error! err message:"+err);
+                                                            logger.warn("JSON send error! err message:"+err);
                                                         }
                                                         logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match));
                                                     });
@@ -277,7 +277,7 @@ if (!cluster.isMaster) {//actual work flow
                                             //send json back to client
                                             connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(err){
                                                 if(err){
-                                                    loger.warn("JSON send error! err message:"+err);
+                                                    logger.warn("JSON send error! err message:"+err);
                                                 }
                                                 logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match));
                                             });
@@ -293,7 +293,7 @@ if (!cluster.isMaster) {//actual work flow
                             }else{
                                 connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
                                     if(err){
-                                        loger.warn("JSON send error! err message:"+err);
+                                        logger.warn("JSON send error! err message:"+err);
                                     }
                                     logger.error("Get create_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
                                 });
@@ -304,7 +304,7 @@ if (!cluster.isMaster) {//actual work flow
                         if(!JSONValidation.leave_match(JSONmsg)){
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"leave_match json illegal")),function(err){
                                 if(err){
-                                    loger.warn("JSON send error! err message:"+err);
+                                    logger.warn("JSON send error! err message:"+err);
                                 }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
@@ -330,7 +330,7 @@ if (!cluster.isMaster) {//actual work flow
                                         matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function(){
                                             connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(err){
                                                 if(err){
-                                                    loger.warn("JSON send error! err message:"+err);
+                                                    logger.warn("JSON send error! err message:"+err);
                                                 }
                                                 logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
                                             });
@@ -345,7 +345,7 @@ if (!cluster.isMaster) {//actual work flow
                                     }catch(e){
                                         connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)),function(err){
                                             if(err){
-                                                loger.warn("JSON send error! err message:"+err);
+                                                logger.warn("JSON send error! err message:"+err);
                                             }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)));
                                             logger.error("client send a non-exists match id!");
@@ -355,7 +355,7 @@ if (!cluster.isMaster) {//actual work flow
                             }else{
                                 connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
                                     if(err){
-                                        loger.warn("JSON send error! err message:"+err);
+                                        logger.warn("JSON send error! err message:"+err);
                                     }
                                     logger.error("Get leave_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
                                 });
@@ -367,7 +367,7 @@ if (!cluster.isMaster) {//actual work flow
                         if(!JSONValidation.submit_match(JSONmsg)){
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"submit_match json illegal")),function(err){
                                 if(err){
-                                    loger.warn("JSON send error! err message:"+err);
+                                    logger.warn("JSON send error! err message:"+err);
                                 }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
@@ -383,7 +383,7 @@ if (!cluster.isMaster) {//actual work flow
                                         matchDAO.updateMatch(JSONmsg.game,JSONmsg.match.match_id,match,function(){
                                             connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(err){
                                                 if(err){
-                                                    loger.warn("JSON send error! err message:"+err);
+                                                    logger.warn("JSON send error! err message:"+err);
                                                 }
                                                 logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
                                             });
@@ -394,7 +394,7 @@ if (!cluster.isMaster) {//actual work flow
                                     }else{
                                         connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")),function(err){
                                             if(err){
-                                                loger.warn("JSON send error! err message:"+err);
+                                                logger.warn("JSON send error! err message:"+err);
                                             }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")));
                                         });
@@ -403,7 +403,7 @@ if (!cluster.isMaster) {//actual work flow
                             }else{
                                 connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
                                     if(err){
-                                        loger.warn("JSON send error! err message:"+err);
+                                        logger.warn("JSON send error! err message:"+err);
                                     }
                                     logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
                                     logger.error("Get submit_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
@@ -415,7 +415,7 @@ if (!cluster.isMaster) {//actual work flow
                         if(!JSONValidation.get_matches(JSONmsg)){
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"get_matches json illegal")),function(err){
                                 if(err){
-                                    loger.warn("JSON send error! err message:"+err);
+                                    logger.warn("JSON send error! err message:"+err);
                                 }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
@@ -428,14 +428,14 @@ if (!cluster.isMaster) {//actual work flow
                                     if (matches != null){
                                         connection.sendUTF(JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches)),function(err){
                                             if(err){
-                                                loger.warn("JSON send error! err message:"+err);
+                                                logger.warn("JSON send error! err message:"+err);
                                             }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches)));
                                         });
                                     }else{
                                         connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"no match for this user")),function(err){
                                             if(err){
-                                                loger.warn("JSON send error! err message:"+err);
+                                                logger.warn("JSON send error! err message:"+err);
                                             }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"no match for this user")));
                                         });
@@ -444,7 +444,7 @@ if (!cluster.isMaster) {//actual work flow
                             }else{
                                 connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
                                     if(err){
-                                        loger.warn("JSON send error! err message:"+err);
+                                        logger.warn("JSON send error! err message:"+err);
                                     }
                                     logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
                                     logger.error("Get get_matches but user not login! request JSON is "+JSON.stringify(JSONmsg));
@@ -456,7 +456,7 @@ if (!cluster.isMaster) {//actual work flow
                         if(!JSONValidation.online_players(JSONmsg)){
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"online_players json illegal")),function(err){
                                 if(err){
-                                    loger.warn("JSON send error! err message:"+err);
+                                    logger.warn("JSON send error! err message:"+err);
                                 }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
@@ -469,7 +469,7 @@ if (!cluster.isMaster) {//actual work flow
                                     playerDAO.getPlayersById(opponents_user_ids,function(opponents){
                                         connection.sendUTF(JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents)),function(err){
                                             if(err){
-                                                loger.warn("JSON send error! err message:"+err);
+                                                logger.warn("JSON send error! err message:"+err);
                                             }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents)));
                                         });
@@ -478,7 +478,7 @@ if (!cluster.isMaster) {//actual work flow
                             }else{
                                 connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
                                     if(err){
-                                        loger.warn("JSON send error! err message:"+err);
+                                        logger.warn("JSON send error! err message:"+err);
                                     }
                                     logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
                                     logger.error("Get online_players but user not login! request JSON is "+JSON.stringify(JSONmsg));
