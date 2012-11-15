@@ -3,7 +3,7 @@
  * User: bxshi
  * Date: 12-11-12
  * Time: PM12:03
- * To change this template use File | Settings | File Templates.
+ * Construct JSON object for response user's request or push message.
  */
 
 

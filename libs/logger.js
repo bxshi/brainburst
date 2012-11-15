@@ -3,7 +3,7 @@
  * User: Carmack.Shi <baoxu.shi@gmail.com>
  * Date: 12-11-8
  * Time: 下午4:06
- * To change this template use File | Settings | File Templates.
+ * Used for debug and log.
  */
 
 var clc = require('cli-color');
@@ -19,9 +19,7 @@ module.exports={
         }
     },
     info:function(msg){
-        if(process.env.NODE_ENV=='development'){
             console.log(time("["+new Date()+"]")+"["+process.pid+"] "+info(msg));
-        }
     },
     warn:function(msg){
         console.log(time("["+new Date()+"]")+"["+process.pid+"] "+warning(msg));

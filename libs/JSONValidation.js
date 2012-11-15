@@ -3,7 +3,7 @@
  * User: bxshi
  * Date: 12-11-9
  * Time: PM1:33
- * To change this template use File | Settings | File Templates.
+ * Validate user's request, check necessary JSON fields.
  */
 
 module.exports = {

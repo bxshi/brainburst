@@ -12,7 +12,7 @@ exports.websocket = {
   protocol : "brain_burst"
 };
 
-exports.worker_number = 200;
+exports.worker_number = 10;
 
 exports.mongo = {
     host : '127.0.0.1',

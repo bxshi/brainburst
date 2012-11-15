@@ -3,7 +3,7 @@
  * User: bxshi
  * Date: 12-11-13
  * Time: PM12:11
- * To change this template use File | Settings | File Templates.
+ * Construct json object for sending request.
  */
 
 module.exports = {

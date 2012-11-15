@@ -3,7 +3,7 @@
  * User: bxshi
  * Date: 12-11-13
  * Time: PM12:11
- * To change this template use File | Settings | File Templates.
+ * websocket client generator.
  */
 var create_ws_client = function(host,port,protocol) {
     var WebSocketClient = require("../node_modules/websocket/lib/WebSocketClient.js");

@@ -3,7 +3,7 @@
  * User: Carmack.Shi <baoxu.shi@gmail.com>
  * Date: 12-11-8
  * Time: 下午3:54
- * To change this template use File | Settings | File Templates.
+ * global connection pool.
  */
 
 var logger = require('./logger.js')
