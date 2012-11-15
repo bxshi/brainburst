@@ -11,6 +11,9 @@ var cluster = require('cluster');
 var CPU_NUM = require('os').cpus().length;
 var logger = require('./libs/logger.js');
 
+// Configurations
+var Conf = require('./configuration.js');
+var conf = new Conf();
 
 //workers -- handling websocket connections
 if (!cluster.isMaster) {//actual work flow
@@ -24,10 +27,6 @@ if (!cluster.isMaster) {//actual work flow
     var https = require('https');
     var fs = require('fs');
 
-    // Configurations
-    var Conf = require('./configuration.js');
-    var conf = new Conf();
-
     // Self-defined libs
     var connection_pool = require('./libs/redis_connection_pool.js');
     var mongo = require('./libs/MongoDBConnection.js');
@@ -36,6 +35,11 @@ if (!cluster.isMaster) {//actual work flow
     var match = require('./libs/MatchDAO.js');
     var JSONValidation = require('./libs/JSONValidation.js');
     var JSONBuilder = require('./libs/JSONBuilder.js');
+
+    // DAOs
+    var matchDAO = new match.MatchDAO(mongoClient);
+    var playerDAO = new player.PlayerDAO(mongoClient);
+
 
 //    var options = {
 ////        ca:   fs.readFileSync('./ssl/sub.class1.server.ca.pem'),
@@ -110,7 +114,7 @@ if (!cluster.isMaster) {//actual work flow
 
                 //router
 
-                //TODO: change json based log to connection.sendUTF()'s callback
+                //DONE: change json based log to connection.sendUTF()'s callback
                 switch (JSONmsg.type) {
                     case 'user_login':
 
@@ -120,7 +124,10 @@ if (!cluster.isMaster) {//actual work flow
 
                         if(!JSONValidation.user_login(JSONmsg)){
                             //DONE: change error message to a list, and get error from it
-                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user_login json illegal")), function(){
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user_login json illegal")), function(err){
+                                if(err){
+                                    loger.warn("JSON send error! err message:"+err);
+                                }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
                             return;
@@ -128,7 +135,6 @@ if (!cluster.isMaster) {//actual work flow
 
                         if (JSONmsg.user.user_id!=undefined) {//login
                             // user validation (mongoDB)
-                            var playerDAO = new player.PlayerDAO(mongoClient);
 //                            logger.info("user_id is " + JSONmsg.user.user_id);
                             playerDAO.getPlayerById(JSONmsg.user.user_id, function (doc) {
                                 if (doc) {// it is a true user
@@ -136,7 +142,10 @@ if (!cluster.isMaster) {//actual work flow
                                     connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
                                     connection.id = JSONmsg.user.user_id;
                                     connections[connection.id] = connection;
-                                    connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,{'user_id':connection.id,'user_data':doc.user_data})),function(){
+                                    connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,{'user_id':connection.id,'user_data':doc.user_data})),function(err){
+                                        if(err){
+                                            loger.warn("JSON send error! err message:"+err);
+                                        }
                                         logger.debug("send "+connection.id+" a JSON:"+JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,{'user_id':connection.id,'user_data':doc.user_data})));
                                     });
                                     logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
@@ -144,7 +153,10 @@ if (!cluster.isMaster) {//actual work flow
                                     process.send({'type':"get_push",'receiver':[connection.id]});
                                     logger.debug("send a get_push request to master from worker "+process.pid+" receivers are "+connection.id);
                                 } else {// user not exists
-                                    connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user does not exist")), function(){
+                                    connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user does not exist")), function(err){
+                                        if(err){
+                                            loger.warn("JSON send error! err message:"+err);
+                                        }
                                         logger.warn("get a non-exist user uuid "+JSONmsg.user.user_id+", connection from "+connection.remoteAddress);
                                     });
                                 }
@@ -153,13 +165,15 @@ if (!cluster.isMaster) {//actual work flow
                             var connection_uuid = uuid.v4();
                             connection.id = connection_uuid;
                             connection_pool.setConnection(connection_uuid, process.pid);
-                            var playerDAO = new player.PlayerDAO(mongoClient);
                             //TODO: add other data fields
                             var user = {user_id:connection.id, user_data:JSONmsg.user.user_data};
                             playerDAO.createPlayer(user, function () {
                                 logger.debug("create an user " + JSON.stringify(user));
                                 connections[connection.id] = connection;
-                                connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user)), function(){
+                                connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user)), function(err){
+                                    if(err){
+                                        loger.warn("JSON send error! err message:"+err);
+                                    }
                                     logger.debug("send "+user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user)));
                                 });
                                 logger.debug("connection accepted, worker pid is " + process.pid + ". user_id is " + connection.id+" ip is "+connection.remoteAddress);
@@ -173,17 +187,18 @@ if (!cluster.isMaster) {//actual work flow
 
                     case 'create_match':
                         if(!JSONValidation.create_match(JSONmsg)){
-                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"create_match json illegal")),function(){
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"create_match json illegal")),function(err){
+                                if(err){
+                                    loger.warn("JSON send error! err message:"+err);
+                                }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
                             return;
                         }
-                        var playerDAO = new player.PlayerDAO(mongoClient);
 
                         //TODO: simplify login check, just compare connection.id and user.user_id
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
-                                var matchDAO = new match.MatchDAO(mongoClient);
                                 if(JSONmsg.create_method == 'auto'){
                                     //search for existing waiting match
                                     matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function(match){
@@ -203,7 +218,10 @@ if (!cluster.isMaster) {//actual work flow
                                             console.log(match['players']);
                                             matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
                                                 //send json back to user
-                                                connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(){
+                                                connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(err){
+                                                    if(err){
+                                                        loger.warn("JSON send error! err message:"+err);
+                                                    }
                                                     logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)));
                                                 });
                                                 //DONE:send push to others
@@ -229,7 +247,10 @@ if (!cluster.isMaster) {//actual work flow
                                                     match = match[match.length-1];
                                                     logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
                                                     //send json back to client
-                                                    connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(){
+                                                    connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(err){
+                                                        if(err){
+                                                            loger.warn("JSON send error! err message:"+err);
+                                                        }
                                                         logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match));
                                                     });
                                                 });
@@ -254,7 +275,10 @@ if (!cluster.isMaster) {//actual work flow
                                             match = match[match.length-1];
                                             logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
                                             //send json back to client
-                                            connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(){
+                                            connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(err){
+                                                if(err){
+                                                    loger.warn("JSON send error! err message:"+err);
+                                                }
                                                 logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match));
                                             });
 
@@ -267,7 +291,10 @@ if (!cluster.isMaster) {//actual work flow
                                         });
                                 }
                             }else{
-                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(){
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
+                                    if(err){
+                                        loger.warn("JSON send error! err message:"+err);
+                                    }
                                     logger.error("Get create_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
                                 });
                             }
@@ -275,16 +302,17 @@ if (!cluster.isMaster) {//actual work flow
                         break;
                     case 'leave_match':
                         if(!JSONValidation.leave_match(JSONmsg)){
-                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"leave_match json illegal")),function(){
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"leave_match json illegal")),function(err){
+                                if(err){
+                                    loger.warn("JSON send error! err message:"+err);
+                                }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
                             return;
                         }
-                        var playerDAO = new player.PlayerDAO(mongoClient);
                         //validate login
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
-                                var matchDAO = new match.MatchDAO(mongoClient);
                                 //TODO: validate match_id
                                 matchDAO.getMatchById(JSONmsg.game, JSONmsg.match.match_id, function(match){
                                     try{
@@ -300,7 +328,10 @@ if (!cluster.isMaster) {//actual work flow
                                         match.status = "end";
 
                                         matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function(){
-                                            connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(){
+                                            connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(err){
+                                                if(err){
+                                                    loger.warn("JSON send error! err message:"+err);
+                                                }
                                                 logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
                                             });
                                             //send `leave_match` push
@@ -312,14 +343,20 @@ if (!cluster.isMaster) {//actual work flow
                                         });
 
                                     }catch(e){
-                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)),function(){
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)),function(err){
+                                            if(err){
+                                                loger.warn("JSON send error! err message:"+err);
+                                            }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)));
                                             logger.error("client send a non-exists match id!");
                                         });
                                     }
                                 });
                             }else{
-                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(){
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
+                                    if(err){
+                                        loger.warn("JSON send error! err message:"+err);
+                                    }
                                     logger.error("Get leave_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
                                 });
                             }
@@ -328,22 +365,26 @@ if (!cluster.isMaster) {//actual work flow
                         break;
                     case 'submit_match':
                         if(!JSONValidation.submit_match(JSONmsg)){
-                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"submit_match json illegal")),function(){
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"submit_match json illegal")),function(err){
+                                if(err){
+                                    loger.warn("JSON send error! err message:"+err);
+                                }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
                             return;
                         }
-                        var playerDAO = new player.PlayerDAO(mongoClient);
                         //validate login
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
-                                var matchDAO = new match.MatchDAO(mongoClient);
                                 matchDAO.getMatchById(JSONmsg.game,JSONmsg.match.match_id, function(match){
                                     if(match != null){
                                         //TODO do we need validation about who should submit match data?
                                         match.match_data = JSONmsg.match.match_data;
                                         matchDAO.updateMatch(JSONmsg.game,JSONmsg.match.match_id,match,function(){
-                                            connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(){
+                                            connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(err){
+                                                if(err){
+                                                    loger.warn("JSON send error! err message:"+err);
+                                                }
                                                 logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
                                             });
                                             //push to all players
@@ -351,13 +392,19 @@ if (!cluster.isMaster) {//actual work flow
                                             logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+match.players+", json is "+JSON.stringify(JSONBuilder.submit_match_push_builder(JSONmsg.user.user_id,match)));
                                         });
                                     }else{
-                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")),function(){
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")),function(err){
+                                            if(err){
+                                                loger.warn("JSON send error! err message:"+err);
+                                            }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")));
                                         });
                                     }
                                 });
                             }else{
-                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(){
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
+                                    if(err){
+                                        loger.warn("JSON send error! err message:"+err);
+                                    }
                                     logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
                                     logger.error("Get submit_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
                                 });
@@ -366,29 +413,39 @@ if (!cluster.isMaster) {//actual work flow
                         break;
                     case 'get_matches':
                         if(!JSONValidation.get_matches(JSONmsg)){
-                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"get_matches json illegal")),function(){
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"get_matches json illegal")),function(err){
+                                if(err){
+                                    loger.warn("JSON send error! err message:"+err);
+                                }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
                             return;
                         }
-                        var playerDAO = new player.PlayerDAO(mongoClient);
                         //validate login
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
-                                var matchDAO = new match.MatchDAO(mongoClient);
                                 matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,0,100,function(matches){
                                     if (matches != null){
-                                        connection.sendUTF(JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches)),function(){
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches)),function(err){
+                                            if(err){
+                                                loger.warn("JSON send error! err message:"+err);
+                                            }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches)));
                                         });
                                     }else{
-                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"no match for this user")),function(){
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"no match for this user")),function(err){
+                                            if(err){
+                                                loger.warn("JSON send error! err message:"+err);
+                                            }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"no match for this user")));
                                         });
                                     }
                                 });
                             }else{
-                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(){
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
+                                    if(err){
+                                        loger.warn("JSON send error! err message:"+err);
+                                    }
                                     logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
                                     logger.error("Get get_matches but user not login! request JSON is "+JSON.stringify(JSONmsg));
                                 });
@@ -397,24 +454,32 @@ if (!cluster.isMaster) {//actual work flow
                         break;
                     case 'online_players':
                         if(!JSONValidation.online_players(JSONmsg)){
-                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"online_players json illegal")),function(){
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"online_players json illegal")),function(err){
+                                if(err){
+                                    loger.warn("JSON send error! err message:"+err);
+                                }
                                 logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
                             });
                             return;
                         }
-                        var playerDAO = new player.PlayerDAO(mongoClient);
                         //validate login
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
                                 connection_pool.getOnline(JSONmsg.user.user_id, function(opponents_user_ids){
                                     playerDAO.getPlayersById(opponents_user_ids,function(opponents){
-                                        connection.sendUTF(JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents)),function(){
+                                        connection.sendUTF(JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents)),function(err){
+                                            if(err){
+                                                loger.warn("JSON send error! err message:"+err);
+                                            }
                                             logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents)));
                                         });
                                     });
                                 });
                             }else{
-                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(){
+                                connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
+                                    if(err){
+                                        loger.warn("JSON send error! err message:"+err);
+                                    }
                                     logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")));
                                     logger.error("Get online_players but user not login! request JSON is "+JSON.stringify(JSONmsg));
                                 });
@@ -446,23 +511,24 @@ if (!cluster.isMaster) {//actual work flow
                     try{
                         connections[message.receiver[id]].sendUTF(JSON.stringify(message.json), function(err){
                             if(err){
-                                logger.error("push send status"+err);
+                                logger.debug("push send status"+err);
+                                throw "user not online";
                             }else{
-                                logger.error("push send to "+message.receiver[id]+" ok");
+                                logger.debug("push send to "+message.receiver[id]+" ok");
                             }
                         });
                     }catch(e){
-                        logger.warn(e);
-                        logger.warn("the user_id "+message.receiver[id]+" of this push is not online!");
+                        logger.debug(e);
+                        logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
                         //push failed, put it back.
                         process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
-                        logger.debug("send a restore_push request to master from worker "+process.pid+" receivers are "+message.receiver[id]+", json is "+JSON.stringify(message.json));
+                        logger.info("send a restore_push request to master from worker "+process.pid+" receivers are "+message.receiver[id]+", json is "+JSON.stringify(message.json));
                     }
                 }else{
-                    logger.warn("the user_id "+message.receiver[id]+" of this push is not online!");
+                    logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
                     //push failed, put it back.
                     process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
-                    logger.debug("send a restore_push request to master from worker "+process.pid+" receivers are "+message.receiver[id]+", json is "+JSON.stringify(message.json));
+                    logger.info("send a restore_push request to master from worker "+process.pid+" receivers are "+message.receiver[id]+", json is "+JSON.stringify(message.json));
 
                 }
             }
@@ -471,8 +537,6 @@ if (!cluster.isMaster) {//actual work flow
 
 } else {//create multi-worker to handle websocket requests
 
-    var Conf = require('./configuration.js');
-    var conf = new Conf();
     //clear redis-connection-pool's data
     var redisConnectionPoolClient = require('./libs/redis_connection_pool.js');
     redisConnectionPoolClient.flush();
@@ -498,23 +562,21 @@ if (!cluster.isMaster) {//actual work flow
     Object.keys(cluster.workers).forEach(function(id) {
         cluster.workers[id].on('message', function(message){
             if(message.type!=undefined && message.receiver!=undefined){
+                logger.debug("Get a Push from worker:"+JSON.stringify(message));
                 switch(message.type){
                     case 'new_push':
-                        logger.warn(JSON.stringify(message));
-                        logger.warn(message.receiver);
                         for (var i in message.receiver){
-                            logger.warn(message.receiver[i]);
                             //find out which worker is handling this connection
                             redisConnectionPoolClient.getConnection(message.receiver[i], function(user_id,pid){
-                                logger.error("get "+user_id+"'s worker: "+pid);
+                                logger.debug("get "+user_id+"'s worker: "+pid);
                                 if(pid == null){//already disconnected
                                     //DONE: add restore push
-                                    logger.error("send error, user_id:"+user_id+" restore push:"+JSON.stringify(message.json));
+                                    logger.warn("push's worker is not online! push send error, user_id:"+user_id+" restore push:"+JSON.stringify(message.json));
                                     queue.pushToFront(user_id,JSON.stringify(message.json), function(err,reply){
                                         if(err){
                                             logger.error("restore push save error, "+err);
                                         }else{
-                                            logger.info("restore push saved, "+reply);
+                                            logger.debug("restore push saved, "+reply);
                                         }
                                     });
                                 }else{
@@ -524,12 +586,9 @@ if (!cluster.isMaster) {//actual work flow
                         }
                         break;
                     case 'get_push':
-                        logger.error("get_push");
                         //TODO: does this foreach function series or async? If not series, it will cause push order problems.
                         for (var i in message.receiver){
-                            logger.error("get_push uuid:"+message.receiver[i]);
                             queue.each(message.receiver[i],function(json){
-                                logger.error("get_push data:"+json);
                                 cluster.workers[id].send({type:"send_push",'receiver':[message.receiver[i]],'json':JSON.parse(json)});
                             });
                         }
@@ -541,7 +600,7 @@ if (!cluster.isMaster) {//actual work flow
                                     logger.error("restore push save error, "+err);
                                 }
                                 if(reply){
-                                    logger.info("restore push saved, "+reply);
+                                    logger.debug("restore push saved, "+reply);
                                 }
                             });
                         }else{
@@ -549,11 +608,11 @@ if (!cluster.isMaster) {//actual work flow
                         }
                         break;
                     default:
-                        logger.warn("unsupported cluster message");
+                        logger.error("unsupported cluster message");
                         break;
                 }
             }else{
-                logger.warn("illegal cluster message, "+JSON.stringify(message));
+                logger.error("illegal cluster message, "+JSON.stringify(message));
             }
         });
     });
