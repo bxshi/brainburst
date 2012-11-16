@@ -207,15 +207,15 @@ if (!cluster.isMaster) {//actual work flow
                                             //the returned variable match is not a list but a single object
                                             if(match==undefined)
                                                 throw "no waiting matches";
-                                            //TODO: add check to exclude game created by user its own.
-                                            console.dir(match);
+                                            //DONE: add check to exclude game created by user its own.
+//                                            console.dir(match);
                                             //if get a match with waiting status, join it
                                             var push_players = ce.clone(match['players']);
                                             match['players'][match['players'].length] = JSONmsg.user.user_id;
                                             if (match['players'].length == match['max_players']){//if there is enough people here
                                                 match['status'] = 'pending';
                                             }
-                                            console.log(match['players']);
+//                                            console.log(match['players']);
                                             matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
                                                 //send json back to user
                                                 connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)),function(err){
@@ -313,7 +313,7 @@ if (!cluster.isMaster) {//actual work flow
                         //validate login
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
-                                //TODO: validate match_id
+                                //DONE: validate match_id
                                 matchDAO.getMatchById(JSONmsg.game, JSONmsg.match.match_id, function(match){
                                     try{
                                         if(match==undefined){
@@ -378,7 +378,7 @@ if (!cluster.isMaster) {//actual work flow
                             if(player != null && JSONmsg.user.user_id == connection.id){
                                 matchDAO.getMatchById(JSONmsg.game,JSONmsg.match.match_id, function(match){
                                     if(match != null){
-                                        //TODO do we need validation about who should submit match data?
+                                        //DONE do we need validation about who should submit match data? (No need)
                                         match.match_data = JSONmsg.match.match_data;
                                         matchDAO.updateMatch(JSONmsg.game,JSONmsg.match.match_id,match,function(){
                                             connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(err){
