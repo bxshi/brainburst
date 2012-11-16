@@ -49,7 +49,7 @@ describe('# Change Profile Test',function(){
                 should.exists(JSONmsg);
                 switch(JSONmsg.msg_id){
                     case 1:
-                        JSONmsg.status.should.not.equal('error');
+                        JSONmsg.status.should.equal('ok');
                         JSONmsg.user.user_data.should.equal('new'+i);
                         workers[i].connection.sendUTF(JSON.stringify(jsonBuilder.change_profile_builder(JSONmsg.user.user_id,'bee'+i)));
                         break;
