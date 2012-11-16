@@ -17,6 +17,24 @@
         "msg" : "if status is error, this will show details about error"
     },
     {//User Send
+        "msg_id" : 11,
+        "type" : "change_profile",
+        "user" : {
+            "user_id" : "UUID",
+            "user_data" : "new data"
+        }
+    },
+    {//User get
+        "msg_id" : 11,
+        "type" : "change_profile",
+        "user" : {
+            "user_id" : "UUID",
+            "user_data" : "new data"
+        },
+        "status" : "ok|error",
+        "msg" : "..."
+    }
+    {//User Send
         "msg_id" : 2,
         "user" : {
             "user_id" : "UUID",

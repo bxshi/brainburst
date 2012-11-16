@@ -17,6 +17,17 @@ module.exports = {
         }
         return JSONObj;
     },
+    change_profile_builder : function(user_id, user_data){
+        var JSONObj = {'msg_id' : 11, 'type':'change_profile'};
+        JSONObj.user = {};
+        if(user_id){
+            JSONObj.user.user_id = user_id;
+        }
+        if(user_data){
+            JSONObj.user.user_data = user_data;
+        }
+        return JSONObj;
+    },
     user_login_error_builder : function(){},
     create_match_builder : function(create_method,user,match,opponent){
         var JSONObj = {'msg_id': 2, 'type':"create_match",'game':"test_game",'max_players':2};

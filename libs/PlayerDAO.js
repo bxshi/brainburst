@@ -36,6 +36,17 @@ PlayerDAO.prototype.getPlayersById = function(id_list, cb) {
     });
 }
 
+PlayerDAO.prototype.updatePlayer = function(id,data,cb) {
+    this.connection.query(collectionName, function(collection){
+        collection.update({'user_id':id}, data, {}, function(err){
+            if(err){
+                throw err;
+            }
+            cb();
+        });
+    });
+}
+
 PlayerDAO.prototype.createPlayer = function(player, cb) {
     if(player.user_id == null)
         throw "player has no user_id";

@@ -185,6 +185,38 @@ if (!cluster.isMaster) {//actual work flow
                         }
                         break;
 
+                    case 'change_profile':
+                        if(!JSONValidation.change_profile(JSONmsg)){
+                            connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"change_profile json illegal")), function(err){
+                                if(err){
+                                    logger.warn("JSON send error! err message:"+err);
+                                }
+                                logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
+                            });
+                            return;
+                        }
+                        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+                             if(player != null && JSONmsg.user.user_id == connection.id){
+                                 //user legal
+                                 playerDAO.updatePlayer(JSONmsg.user.user_id,JSONmsg.user,function(){
+                                     connection.sendUTF(JSON.stringify(JSONBuilder.change_profile_builder(JSONmsg.msg_id, JSONmsg.user)), function(err){
+                                         if(err){
+                                             logger.warn("JSON send error! err message:"+err);
+                                         }
+                                         logger.error("Get create_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
+                                     });
+                                 });
+                             }else{
+                                 connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
+                                     if(err){
+                                         logger.warn("JSON send error! err message:"+err);
+                                     }
+                                     logger.error("Get create_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
+                                 });
+                             }
+                        });
+                        break;
+
                     case 'create_match':
                         if(!JSONValidation.create_match(JSONmsg)){
                             connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"create_match json illegal")),function(err){

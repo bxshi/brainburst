@@ -15,6 +15,13 @@ module.exports = {
         JSONObj.user = {'user_id':user.user_id,'user_data':user.user_data};
         return JSONObj;
     },
+    change_profile_builder : function(msg_id, user) {
+        var JSONObj = {'type':'change_profile', 'msg_id':msg_id, 'status':'ok'};
+        if(user){
+            JSONObj.user = {'user_id':user.user_id,'user_data':user.user_data};
+        }
+        return JSONObj;
+    },
     create_match_builder : function(msg_id, status, msg, match) {
         var JSONObj = {'type':'create_match','msg_id':msg_id,'status':status};
         if(status == 'error'){

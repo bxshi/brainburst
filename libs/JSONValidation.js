@@ -29,6 +29,18 @@ module.exports = {
         }
         return true;
     },
+    change_profile  :   function(JSONmsg){
+      if(!normalValidation(JSONmsg)){
+          return false;
+      }
+      if(JSONmsg.type == undefined || JSONmsg.type != 'change_profile'){
+          return false;
+      }
+      if(JSONmsg.user == undefined || JSONmsg.user.user_id == undefined || JSONmsg.user.user_data == undefined){
+          return false;
+      }
+      return true;
+    },
     create_match    : function(JSONmsg){
         if(!normalValidation(JSONmsg)){
             return false;
