@@ -84,7 +84,7 @@ if (!cluster.isMaster) {//actual work flow
             var connection = request.accept('brain_burst', request.origin);
         } catch (e) {
             logger.warn("connection from " + request.remoteAddress + " is rejected, it does not holding the supported protocol.");
-            var connection = request.reject('not supported');
+            request.reject('not supported');
             return;
         }
 
@@ -283,7 +283,7 @@ if (!cluster.isMaster) {//actual work flow
                                                         if(err){
                                                             logger.warn("JSON send error! err message:"+err);
                                                         }
-                                                        logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match));
+                                                        logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match)));
                                                     });
                                                 });
                                         }
@@ -603,7 +603,7 @@ if (!cluster.isMaster) {//actual work flow
                                 logger.debug("get "+user_id+"'s worker: "+pid);
                                 if(pid == null){//already disconnected
                                     //DONE: add restore push
-                                    logger.warn("push's worker is not online! push send error, user_id:"+user_id+" restore push:"+JSON.stringify(message.json));
+                                    logger.warn("user is not online! push send error, user_id:"+user_id+" restore push:"+JSON.stringify(message.json));
                                     queue.pushToFront(user_id,JSON.stringify(message.json), function(err,reply){
                                         if(err){
                                             logger.error("restore push save error, "+err);
