@@ -33,7 +33,7 @@
         },
         "status" : "ok|error",
         "msg" : "..."
-    }
+    },
     {//User Send
         "msg_id" : 2,
         "user" : {
