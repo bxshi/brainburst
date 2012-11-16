@@ -203,15 +203,15 @@ if (!cluster.isMaster) {//actual work flow
                                          if(err){
                                              logger.warn("JSON send error! err message:"+err);
                                          }
-                                         logger.error("Get create_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
-                                     });
+                                         logger.debug("send "+connection.id+" a JSON:"+JSON.stringify(JSONBuilder.change_profile_builder(JSONmsg.msg_id, JSONmsg.user)));
+                                    });
                                  });
                              }else{
                                  connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"please login first")),function(err){
                                      if(err){
                                          logger.warn("JSON send error! err message:"+err);
                                      }
-                                     logger.error("Get create_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
+                                     logger.error("Get change_profile but user not login! request JSON is "+JSON.stringify(JSONmsg));
                                  });
                              }
                         });
