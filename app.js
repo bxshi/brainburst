@@ -40,18 +40,6 @@ if (!cluster.isMaster) {//actual work flow
     var matchDAO = new match.MatchDAO(mongoClient);
     var playerDAO = new player.PlayerDAO(mongoClient);
 
-
-//    var options = {
-////        ca:   fs.readFileSync('./ssl/sub.class1.server.ca.pem'),
-//        key:  fs.readFileSync('./ssl/ssl.key'),
-//        cert: fs.readFileSync('./ssl/ssl.crt')
-//    };
-//
-//    var httpsServer = https.createServer(options,function(request,response){
-//        res.setHeader('Content-Type', 'text/plain');
-//        res.end("Hello World!\n");
-//    }).listen(9009);
-
     var server = http.createServer(function (request, response) {
         logger.warn("Received http request for " + request.url + " that maybe an attack?");
         response.writeHead(404);
