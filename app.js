@@ -551,9 +551,13 @@ if (!cluster.isMaster) {//actual work flow
         connection.on('close', function (reasonCode, description) {
             connection_pool.delConnection(connection.id, function () {
                 delete connections[connection.id];
-                logger.info("Peer " + connection.id + " disconnected");
             });
         });
+    });
+
+    wsServer.on('close', function(connection, reason, description){
+        logger.info("Peer " + connection.id + " disconnected");
+        connection.close();
     });
 
     //workers' push sending logic
