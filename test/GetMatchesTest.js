@@ -70,7 +70,9 @@ describe('# Get Matches Test',function(){
                     should.exists(JSONmsg.match.players);
                     should.exists(JSONmsg.type);
                     JSONmsg.type.should.equal("invited_match");
-                    JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
+                    JSONmsg.match.players[0].should.have.property('user_id');
+                    JSONmsg.match.players[0].should.have.property('user_data');
+//                    JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
                     pusher++;
                 }else if(JSONmsg.msg_id == 2){
                     should.exists(JSONmsg.match);
@@ -80,7 +82,9 @@ describe('# Get Matches Test',function(){
                     should.exists(JSONmsg.status);
                     JSONmsg.status.should.equal('ok');
                     JSONmsg.match.match_data.should.equal('worker'+i);
-                    JSONmsg.match.players.should.include(workers[i].user.user_id);
+                    JSONmsg.match.players[0].should.have.property('user_id');
+                    JSONmsg.match.players[0].should.have.property('user_data');
+//                    JSONmsg.match.players.should.include(workers[i].user.user_id);
                     creator++;
                 }else if(JSONmsg.msg_id == 5){
                     should.exists(JSONmsg.status);
@@ -91,6 +95,8 @@ describe('# Get Matches Test',function(){
                         JSONmsg.matches[j].should.have.property('match_id');
                         JSONmsg.matches[j].should.have.property('players');
                         JSONmsg.matches[j].should.have.property('match_data');
+                        JSONmsg.matches[j].players[0].should.have.property('user_id');
+                        JSONmsg.matches[j].players[0].should.have.property('user_data');
                     }
                     get_matches_push++;
                     if(get_matches_push==worker_number){
@@ -104,10 +110,11 @@ describe('# Get Matches Test',function(){
         });
     });
 
-    it("## Get matches when user do not have any match.", function(done){
+    it("## Get matches when user do not have any match", function(done){
         workers[0].connection.sendUTF(JSON.stringify(jsonBuilder.get_matches_builder(workers[0].user)));
         workers[0].connection.on('message',function(message){
             var JSONmsg = JSON.parse(message.utf8Data);
+            console.dir(JSONmsg);
             should.exists(JSONmsg);
             should.exists(JSONmsg.status);
             JSONmsg.status.should.equal('ok');

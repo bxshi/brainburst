@@ -66,23 +66,31 @@ describe('# Leave Match Test',function(){
                     should.exists(JSONmsg.match);
                     should.exists(JSONmsg.match.match_id);
                     should.exists(JSONmsg.match.players);
+                    JSONmsg.match.players[0].should.have.property('user_id');
+                    JSONmsg.match.players[0].should.have.property('user_data');
                 }
                 if(JSONmsg.msg_id == -1 && JSONmsg.type == "invited_match"){//it is a push
                     should.exists(JSONmsg.type);
                     should.exists(JSONmsg.match.match_data);
                     JSONmsg.type.should.equal("invited_match");
-                    JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
+                    JSONmsg.match.players[0].should.have.property('user_id');
+                    JSONmsg.match.players[0].should.have.property('user_data');
+//                    JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
                     workers[i].connection.sendUTF(JSON.stringify(jsonBuilder.leave_match_builder(workers[i].user,JSONmsg.match.match_id)));
                     leaver++;
                 }else if(JSONmsg.msg_id == 2){
                     should.exists(JSONmsg.status);
                     JSONmsg.status.should.equal('ok');
                     JSONmsg.match.match_data.should.equal('worker'+i);
-                    JSONmsg.match.players.should.include(workers[i].user.user_id);
+                    JSONmsg.match.players[0].should.have.property('user_id');
+                    JSONmsg.match.players[0].should.have.property('user_data');
+//                    JSONmsg.match.players.should.include(workers[i].user.user_id);
                 }else if(JSONmsg.type == "leave_match"){//get push about "leave_match"
                     should.exists(JSONmsg.match);
                     should.exists(JSONmsg.match.players);
-                    JSONmsg.match.players.should.include(workers[i].user.user_id);
+                    JSONmsg.match.players[0].should.have.property('user_id');
+                    JSONmsg.match.players[0].should.have.property('user_data');
+//                    JSONmsg.match.players.should.include(workers[i].user.user_id);
                     JSONmsg.match.players.should.not.include(workers[invitation_index].user.user_id);
                     leave_push++;
                 }

@@ -22,31 +22,57 @@ module.exports = {
         }
         return JSONObj;
     },
-    create_match_builder : function(msg_id, status, msg, match) {
+    create_match_builder : function(msg_id, status, msg, match, players) {
         var JSONObj = {'type':'create_match','msg_id':msg_id,'status':status};
         if(status == 'error'){
             JSONObj.msg = msg;
         }else{
-            JSONObj.match = {'match_id':match['match_id'],'players':match['players'],'match_data':match['match_data']};
+            JSONObj.match = {'match_id':match['match_id'],'match_data':match['match_data']};
+            if(players) {
+                JSONObj.match.players = [];
+                for(var i = 0; i< players.length; i++) {
+                    JSONObj.match.players[i] = {'user_id':players[i].user_id,'user_data':players[i].user_data};
+                }
+            }else{
+                console.log("ERROR! "+JSON.stringify(JSONObj));
+            }
         }
         //console.dir(JSONObj);
         return JSONObj;
     },
-    create_match_push_builder : function(match){
+    create_match_push_builder : function(match, players){
         var JSONObj = {'msg_id':-1, 'type':'invited_match'};
-        JSONObj.match = {'match_id':match['match_id'],'players':match['players'],'match_data':match['match_data']};
+        JSONObj.match = {'match_id':match['match_id'],'match_data':match['match_data']};
+        if(players) {
+            JSONObj.match.players = [];
+            for(var i = 0; i< players.length; i++) {
+                JSONObj.match.players[i] = {'user_id':players[i].user_id,'user_data':players[i].user_data};
+            }
+        }
         //console.dir(JSONObj);
         return JSONObj;
     },
-    join_match_push_builder : function(match){
+    join_match_push_builder : function(match,players){
         var JSONObj = {'msg_id':-1, 'type':'join_match'};
-        JSONObj.match = {'match_id':match['match_id'],'players':match['players']};
+        JSONObj.match = {'match_id':match['match_id']};
+        if(players) {
+            JSONObj.match.players = [];
+            for(var i = 0; i< players.length; i++) {
+                JSONObj.match.players[i] = {'user_id':players[i].user_id,'user_data':players[i].user_data};
+            }
+        }
         //console.dir(JSONObj);
         return JSONObj;
     },
-    leave_match_push_builder : function(match){
+    leave_match_push_builder : function(match,players){
         var JSONObj = {'msg_id':-1, 'type':'leave_match'};
-        JSONObj.match = {'match_id': match['match_id'],'players':match['players']};
+        JSONObj.match = {'match_id': match['match_id']};
+        if(players) {
+            JSONObj.match.players = [];
+            for(var i = 0; i< players.length; i++) {
+                JSONObj.match.players[i] = {'user_id':players[i].user_id,'user_data':players[i].user_data};
+            }
+        }
         //console.dir(JSONObj);
         return JSONObj;
     },
@@ -66,12 +92,19 @@ module.exports = {
         //console.dir(JSONObj);
         return JSONObj;
     },
-    get_matches_builder : function(msg_id, matches){
+    get_matches_builder : function(msg_id, matches, players_list){
         var JSONObj = {'type':'get_matches','msg_id':msg_id, 'status':'ok'};
         //should we use clone to avoid reference problem?
         JSONObj.matches = [];
-        for(var i =0;i<matches.length;i++){
-            JSONObj.matches[i] = {'match_id':matches[i].match_id,'players':matches[i].players,'match_data':matches[i].match_data};
+        if(matches){
+            for(var i =0;i<matches.length;i++){
+                JSONObj.matches[i] = {'match_id':matches[i].match_id,'players':[],'match_data':matches[i].match_data};
+                if(players_list[i]) {
+                    for(var j = 0; j< players_list[i].length; j++) {
+                        JSONObj.matches[i].players[j] = {'user_id':players_list[i][j].user_id,'user_data':players_list[i][j].user_data};
+                    }
+                }
+            }
         }
         //console.dir(JSONObj);
         return JSONObj;

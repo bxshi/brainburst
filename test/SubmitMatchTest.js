@@ -74,13 +74,17 @@ describe('# Submit Match Test',function(){
                     should.exists(JSONmsg.match.players);
                     should.exists(JSONmsg.type);
                     JSONmsg.type.should.equal("invited_match");
-                    JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
+                    JSONmsg.match.players[0].should.have.property('user_data');
+                    JSONmsg.match.players[0].should.have.property('user_id');
+//                    JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
                 }else if(JSONmsg.msg_id == 2){
                     should.exists(JSONmsg.match.players);
                     should.exists(JSONmsg.status);
                     JSONmsg.status.should.equal('ok');
                     JSONmsg.match.match_data.should.equal('worker'+i);
-                    JSONmsg.match.players.should.include(workers[i].user.user_id);
+                    JSONmsg.match.players[0].should.have.property('user_data');
+                    JSONmsg.match.players[0].should.have.property('user_id');
+//                    JSONmsg.match.players.should.include(workers[i].user.user_id);
                     JSONmsg.match.match_data = "round1";
                     workers[i].connection.sendUTF(JSON.stringify(jsonBuilder.submit_match_builder(workers[i].user,JSONmsg.match)));
                     submit++;
