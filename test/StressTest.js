@@ -14,14 +14,22 @@ var async = require("async");
 
 describe('# Stress Test',function(){
 
+
     it('## plain connection without correct protocol', function(done){
+        var latency = 0;
+
         var disconn_count = 0;
 
         var parallel_function = function(){
+            var tmpLatency = Date.now();
             var worker = wsCreator(wsconf.host,wsconf.port);
             worker.on('connectFailed', function(){
+                tmpLatency = Date.now() - tmpLatency;
                 disconn_count++;
+                latency +=tmpLatency;
                 if(disconn_count == concurrency_number){
+                    latency = (latency / 2) / disconn_count;
+                    console.log("!!!!!"+latency);
                     done();
                 }
             });
@@ -36,14 +44,21 @@ describe('# Stress Test',function(){
     });
 
     it('## plain connection with correct protocol (connect, then close it)', function(done){
+        var latency = 0;
         var disconn_count = 0;
 
         var parallel_function = function(){
+            var tmpLatency = Date.now();
             var worker = wsCreator(wsconf.host,wsconf.port,wsconf.protocol);
             worker.on('connect', function(connection){
                 connection.close();
+                tmpLatency = Date.now() - tmpLatency;
+                latency +=tmpLatency;
                 disconn_count++;
+//                console.log(disconn_count);
                 if(disconn_count==concurrency_number){
+                    latency = latency/2/disconn_count;
+                    console.log("!!!!!"+latency);
                     done();
                 }
             });
