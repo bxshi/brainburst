@@ -72,7 +72,7 @@ describe('# Get Matches Test',function(){
                     JSONmsg.type.should.equal("invited_match");
                     JSONmsg.match.players[0].should.have.property('user_id');
                     JSONmsg.match.players[0].should.have.property('user_data');
-//                    JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
+                    JSONmsg.match.players[0].user_id.should.equal(workers[invitation_index].user.user_id);
                     pusher++;
                 }else if(JSONmsg.msg_id == 2){
                     should.exists(JSONmsg.match);
@@ -84,7 +84,7 @@ describe('# Get Matches Test',function(){
                     JSONmsg.match.match_data.should.equal('worker'+i);
                     JSONmsg.match.players[0].should.have.property('user_id');
                     JSONmsg.match.players[0].should.have.property('user_data');
-//                    JSONmsg.match.players.should.include(workers[i].user.user_id);
+                    JSONmsg.match.players[0].user_id.should.equal(workers[i].user.user_id);
                     creator++;
                 }else if(JSONmsg.msg_id == 5){
                     should.exists(JSONmsg.status);

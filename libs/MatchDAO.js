@@ -15,24 +15,26 @@ MatchDAO.prototype.ensureIndex = function(game) {
     var parent = this;
 	if(this.indexStatus[game] != true) {
 		this.connection.query(collectionName(game), function(collection){
-			collection.ensureIndex({"match_id" : 1} ,function(err, msg) {
+			collection.ensureIndex({"match_id" : 1},{'background':'true'} ,function(err, msg) {
 				if(err) {
 					console.log('MatchDAO match_id index err :' + err);
 					throw err;
 				}
+                collection.ensureIndex({"players" : 1},{'background':'true'} ,function(err, msg) {
+                    if(err) {
+                        console.log('MatchDAO players index err :' + err);
+                        throw err;
+                    }
+                    collection.ensureIndex({"status" : 1},{'background':'true'} ,function(err, msg) {
+                        if(err) {
+                            console.log('MatchDAO status index err :' + err);
+                            throw err;
+                        }
+                    });
+                });
 			});
-			collection.ensureIndex({"players" : 1} ,function(err, msg) {
-				if(err) {
-					console.log('MatchDAO players index err :' + err);
-					throw err;
-				}
-			});
-			collection.ensureIndex({"status" : 1} ,function(err, msg) {
-				if(err) {
-					console.log('MatchDAO status index err :' + err);
-					throw err;
-				}
-			});
+
+
             parent.setIndexStatus(game);
 		});
 	}

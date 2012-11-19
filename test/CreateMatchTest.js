@@ -106,6 +106,8 @@ describe('# Create Match Test',function(){
                     JSONmsg.type.should.equal("invited_match");
                     JSONmsg.match.players[0].should.have.property('user_id');
                     JSONmsg.match.players[0].should.have.property('user_data');
+                    JSONmsg.match.match_data.should.equal("worker"+invitation_index);
+                    JSONmsg.match.players[0].user_id.should.equal(workers[invitation_index].user.user_id);
 //                    JSONmsg.match.players.should.include(workers[invitation_index].user.user_id);
                     pusher++;
                 }else if(JSONmsg.msg_id == 2){
@@ -114,6 +116,7 @@ describe('# Create Match Test',function(){
                     JSONmsg.match.match_data.should.equal('worker'+i);
                     JSONmsg.match.players[0].should.have.property('user_id');
                     JSONmsg.match.players[0].should.have.property('user_data');
+                    JSONmsg.match.players[0].user_id.should.equal(workers[i].user.user_id);
 //                    JSONmsg.match.players.should.include(workers[i].user.user_id);
                     creator++;
                 }

@@ -225,6 +225,7 @@ if (!cluster.isMaster) {//actual work flow
                             if(player != null && JSONmsg.user.user_id == connection.id){
                                 if(JSONmsg.create_method == 'auto'){
                                     //search for existing waiting match
+                                    matchDAO.ensureIndex(JSONmsg.game);
                                     matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function(match){
                                         //TODO: Maybe need add error handling?
                                         try{
@@ -243,7 +244,12 @@ if (!cluster.isMaster) {//actual work flow
                                             matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
                                                 playerDAO.getPlayersById(match.players, function(players){
                                                     //send json back to user
-                                                    var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players));
+                                                    //TODO: optimize sort function
+                                                    var players_sorted=[];
+                                                    for(var i=0; i<players.length;i++){
+                                                        players_sorted[match.players.indexOf(players[i].user_id)] = players[i];
+                                                    }
+                                                    var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players_sorted));
                                                     connection.sendUTF(JSON2Send,function(err){
                                                         if(err){
                                                             logger.warn("JSON send error! err message:"+err);
@@ -276,8 +282,12 @@ if (!cluster.isMaster) {//actual work flow
                                                     logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
                                                     playerDAO.getPlayersById(match.players, function(players){
                                                         //send json back to client
-                                                        logger.error(JSON.stringify(players));
-                                                        var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players));
+                                                        //TODO: optimize sort function
+                                                        var players_sorted=[];
+                                                        for(var i=0; i<players.length;i++){
+                                                            players_sorted[match.players.indexOf(players[i].user_id)] = players[i];
+                                                        }
+                                                        var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players_sorted));
                                                         connection.sendUTF(JSON2Send,function(err){
                                                             if(err){
                                                                 logger.warn("JSON send error! err message:"+err);
@@ -294,13 +304,14 @@ if (!cluster.isMaster) {//actual work flow
                                     var match_uuid = uuid.v4();
                                     //TODO: validate user_ids provided by client
                                     var all_players =  ce.clone(JSONmsg.opponent_user_id);
-                                    all_players.push(JSONmsg.user.user_id);
+                                    all_players.splice(0,0,JSONmsg.user.user_id);
                                     //DONE: How to figure out whether the match is full or still waiting
                                     //check if your invitation is already meets the max players, set match status to pending, otherwise set it to waiting .
                                     var match_status = 'waiting';
                                     if (all_players.length == JSONmsg.max_players) {
                                         match_status = 'pending';
                                     }
+                                    matchDAO.ensureIndex(JSONmsg.game);
                                     matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':all_players,'status':match_status,'match_data':JSONmsg.match.match_data},
                                         function(match){//successfully created
                                             //the returned variable match is a list, so need to change it to the first object
@@ -314,19 +325,25 @@ if (!cluster.isMaster) {//actual work flow
                                                 if(!players){
                                                     logger.error("ERR! "+JSONmsg);
                                                 }
+
+                                                //TODO: optimize sort function
+                                                var players_sorted=[];
+                                                for(var i=0; i<players.length;i++){
+                                                    players_sorted[all_players.indexOf(players[i].user_id)] = players[i];
+                                                }
                                                 //send json back to client
-                                                var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players));
+                                                var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players_sorted));
                                                 connection.sendUTF(JSON2Send,function(err){
                                                     if(err){
                                                         logger.warn("JSON send error! err message:"+err);
                                                     }
-                                                    logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players));
+//                                                    logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players));
                                                 });
 
                                                 //DONE: add create_match's push notifications
                                                 //**This only pushes to players who were invited (exclude the one who create this match)**
                                                 //if you want to include the creator, change receiver from `JSONmsg.opponent_user_id` to `all_players`
-                                                process.send({'type':'new_push', 'receiver':JSONmsg.opponent_user_id, 'json':JSONBuilder.create_match_push_builder(match,players)});
+                                                process.send({'type':'new_push', 'receiver':JSONmsg.opponent_user_id, 'json':JSONBuilder.create_match_push_builder(match,players_sorted)});
                                                 logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSONmsg.opponent_user_id+", json is "+JSON2Send);
 
                                             });
@@ -370,6 +387,11 @@ if (!cluster.isMaster) {//actual work flow
                                         match.status = "end";
                                         playerDAO.getPlayersById(match.players, function(players){
                                             matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function(){
+                                                //TODO: optimize sort function
+                                                var players_sorted=[];
+                                                for(var i=0; i<players.length;i++){
+                                                    players_sorted[match.players.indexOf(players[i].user_id)] = players[i];
+                                                }
                                                 var JSON2Send = JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id));
                                                 connection.sendUTF(JSON2Send,function(err){
                                                     if(err){
@@ -380,7 +402,7 @@ if (!cluster.isMaster) {//actual work flow
                                                 //send `leave_match` push
                                                 //Check players, if it is empty, do not create push
                                                 if(match.players.length>0){
-                                                    process.send({'type':'new_push', 'receiver':match.players, 'json':JSONBuilder.leave_match_push_builder(match,players)});
+                                                    process.send({'type':'new_push', 'receiver':match.players, 'json':JSONBuilder.leave_match_push_builder(match,players_sorted)});
                                                 }
                                             });
                                         });
@@ -479,7 +501,15 @@ if (!cluster.isMaster) {//actual work flow
                                             matches_players[i] = matches[i].players;
                                         }
                                         playerDAO.getPlayersByIdList(matches_players,function(match_players){
-                                            var JSON2Send = JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches,match_players));
+                                            //TODO: optimize sort function
+                                            var players_sorted=[];
+                                            for(var i in match_players){
+                                                players_sorted[parseInt(i)] = [];
+                                                for(var j=0;j<matches_players[parseInt(i)].length; j++){
+                                                    players_sorted[parseInt(i)][matches_players[parseInt(i)].indexOf(match_players[i][j].user_id)] = match_players[i][j];
+                                                }
+                                            }
+                                            var JSON2Send = JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches,players_sorted));
                                             connection.sendUTF(JSON2Send,function(err){
                                                 if(err){
                                                     logger.warn("JSON send error! err message:"+err);
