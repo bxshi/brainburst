@@ -142,18 +142,20 @@ if (!cluster.isMaster) {//actual work flow
                                     connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
                                     connection.id = JSONmsg.user.user_id;
                                     connections[connection.id] = connection;
-                                    connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,{'user_id':connection.id,'user_data':doc.user_data})),function(err){
+                                    var JSON2Send = JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,{'user_id':connection.id,'user_data':doc.user_data}));
+                                    connection.sendUTF(JSON2Send,function(err){
                                         if(err){
                                             logger.warn("JSON send error! err message:"+err);
                                         }
-                                        logger.debug("send "+connection.id+" a JSON:"+JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,{'user_id':connection.id,'user_data':doc.user_data})));
+                                        logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
                                     });
                                     logger.info("connection accepted, worker pid is " + process.pid + ". uuid is " + connection.id);
                                     //acknowledge master there is a new login(then master will try send push notifications)
                                     process.send({'type':"get_push",'receiver':[connection.id]});
                                     logger.debug("send a get_push request to master from worker "+process.pid+" receivers are "+connection.id);
                                 } else {// user not exists
-                                    connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user does not exist")), function(err){
+                                    var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user does not exist"));
+                                    connection.sendUTF( JSON2Send, function(err){
                                         if(err){
                                             logger.warn("JSON send error! err message:"+err);
                                         }
@@ -170,11 +172,12 @@ if (!cluster.isMaster) {//actual work flow
                             playerDAO.createPlayer(user, function () {
                                 logger.debug("create an user " + JSON.stringify(user));
                                 connections[connection.id] = connection;
-                                connection.sendUTF(JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user)), function(err){
+                                var JSON2Send = JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user));
+                                connection.sendUTF(JSON2Send, function(err){
                                     if(err){
                                         logger.warn("JSON send error! err message:"+err);
                                     }
-                                    logger.debug("send "+user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user)));
+                                    logger.debug("send "+user.user_id+" a JSON:"+JSON2Send);
                                 });
                                 logger.debug("connection accepted, worker pid is " + process.pid + ". user_id is " + connection.id+" ip is "+connection.remoteAddress);
                                 //acknowledge master there is a new login(then master will try send push notifications)
@@ -199,11 +202,12 @@ if (!cluster.isMaster) {//actual work flow
                              if(player != null && JSONmsg.user.user_id == connection.id){
                                  //user legal
                                  playerDAO.updatePlayer(JSONmsg.user.user_id,JSONmsg.user,function(){
-                                     connection.sendUTF(JSON.stringify(JSONBuilder.change_profile_builder(JSONmsg.msg_id, JSONmsg.user)), function(err){
+                                     var JSON2Send = JSON.stringify(JSONBuilder.change_profile_builder(JSONmsg.msg_id, JSONmsg.user));
+                                     connection.sendUTF(JSON2Send, function(err){
                                          if(err){
                                              logger.warn("JSON send error! err message:"+err);
                                          }
-                                         logger.debug("send "+connection.id+" a JSON:"+JSON.stringify(JSONBuilder.change_profile_builder(JSONmsg.msg_id, JSONmsg.user)));
+                                         logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
                                     });
                                  });
                              }else{
@@ -251,16 +255,18 @@ if (!cluster.isMaster) {//actual work flow
                                             matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
                                                 playerDAO.getPlayersById(match.players, function(players){
                                                     //send json back to user
-                                                    connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players)),function(err){
+                                                    var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players));
+                                                    connection.sendUTF(JSON2Send,function(err){
                                                         if(err){
                                                             logger.warn("JSON send error! err message:"+err);
                                                         }
-                                                        logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players)));
+                                                        logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                                                     });
                                                     //DONE:send push to others
                                                     //If you want send push to all players in this game, change receiver from `push_players` to `match['players']`
-                                                    process.send({'type':'new_push', 'receiver':push_players, 'json':JSONBuilder.join_match_push_builder(match,players)});
-                                                    logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSON.stringify(push_players)+", json is "+JSON.stringify(JSONBuilder.join_match_push_builder(match,players)));
+                                                    var Push2Send = JSONBuilder.join_match_push_builder(match,players);
+                                                    process.send({'type':'new_push', 'receiver':push_players, 'json':Push2Send});
+                                                    logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSON.stringify(push_players)+", json is "+JSON.stringify(Push2Send));
                                                 });
                                             });
 
@@ -283,11 +289,12 @@ if (!cluster.isMaster) {//actual work flow
                                                     playerDAO.getPlayersById(match.players, function(players){
                                                         //send json back to client
                                                         logger.error(JSON.stringify(players));
-                                                        connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players)),function(err){
+                                                        var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players));
+                                                        connection.sendUTF(JSON2Send,function(err){
                                                             if(err){
                                                                 logger.warn("JSON send error! err message:"+err);
                                                             }
-                                                            logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players)));
+                                                            logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                                                         });
                                                     });
                                                 });
@@ -320,7 +327,8 @@ if (!cluster.isMaster) {//actual work flow
                                                     logger.error("ERR! "+JSONmsg);
                                                 }
                                                 //send json back to client
-                                                connection.sendUTF(JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players)),function(err){
+                                                var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players));
+                                                connection.sendUTF(JSON2Send,function(err){
                                                     if(err){
                                                         logger.warn("JSON send error! err message:"+err);
                                                     }
@@ -331,7 +339,7 @@ if (!cluster.isMaster) {//actual work flow
                                                 //**This only pushes to players who were invited (exclude the one who create this match)**
                                                 //if you want to include the creator, change receiver from `JSONmsg.opponent_user_id` to `all_players`
                                                 process.send({'type':'new_push', 'receiver':JSONmsg.opponent_user_id, 'json':JSONBuilder.create_match_push_builder(match,players)});
-                                                logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSONmsg.opponent_user_id+", json is "+JSON.stringify(JSONBuilder.create_match_push_builder(match,players)));
+                                                logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSONmsg.opponent_user_id+", json is "+JSON2Send);
 
                                             });
                                         });
@@ -374,11 +382,12 @@ if (!cluster.isMaster) {//actual work flow
                                         match.status = "end";
                                         playerDAO.getPlayersById(match.players, function(players){
                                             matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function(){
-                                                connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(err){
+                                                var JSON2Send = JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id));
+                                                connection.sendUTF(JSON2Send,function(err){
                                                     if(err){
                                                         logger.warn("JSON send error! err message:"+err);
                                                     }
-                                                    logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
+                                                    logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                                                 });
                                                 //send `leave_match` push
                                                 //Check players, if it is empty, do not create push
@@ -388,11 +397,12 @@ if (!cluster.isMaster) {//actual work flow
                                             });
                                         });
                                     }catch(e){
-                                        connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)),function(err){
+                                        var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e));
+                                        connection.sendUTF(JSON2Send,function(err){
                                             if(err){
                                                 logger.warn("JSON send error! err message:"+err);
                                             }
-                                            logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e)));
+                                            logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                                             logger.error("client send a non-exists match id!");
                                         });
                                     }
@@ -426,15 +436,17 @@ if (!cluster.isMaster) {//actual work flow
                                         //DONE do we need validation about who should submit match data? (No need)
                                         match.match_data = JSONmsg.match.match_data;
                                         matchDAO.updateMatch(JSONmsg.game,JSONmsg.match.match_id,match,function(){
-                                            connection.sendUTF(JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)),function(err){
+                                            var JSON2Send = JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id));
+                                            connection.sendUTF(JSON2Send,function(err){
                                                 if(err){
                                                     logger.warn("JSON send error! err message:"+err);
                                                 }
-                                                logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id)));
+                                                logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                                             });
                                             //push to all players
-                                            process.send({'type':'new_push','receiver':match.players,'json':JSONBuilder.submit_match_push_builder(JSONmsg.user.user_id,match)});
-                                            logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+match.players+", json is "+JSON.stringify(JSONBuilder.submit_match_push_builder(JSONmsg.user.user_id,match)));
+                                            var Push2Send = JSONBuilder.submit_match_push_builder(JSONmsg.user.user_id,match);
+                                            process.send({'type':'new_push','receiver':match.players,'json':Push2Send});
+                                            logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+match.players+", json is "+JSON.stringify(Push2Send));
                                         });
                                     }else{
                                         connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")),function(err){
@@ -479,11 +491,12 @@ if (!cluster.isMaster) {//actual work flow
                                             matches_players[i] = matches[i].players;
                                         }
                                         playerDAO.getPlayersByIdList(matches_players,function(match_players){
-                                            connection.sendUTF(JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches,match_players)),function(err){
+                                            var JSON2Send = JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches,match_players));
+                                            connection.sendUTF(JSON2Send,function(err){
                                                 if(err){
                                                     logger.warn("JSON send error! err message:"+err);
                                                 }
-                                                logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches,match_players)));
+                                                logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                                             });
                                         });
                                     }else{
@@ -522,11 +535,12 @@ if (!cluster.isMaster) {//actual work flow
                             if(player != null && JSONmsg.user.user_id == connection.id){
                                 connection_pool.getOnline(JSONmsg.user.user_id, function(opponents_user_ids){
                                     playerDAO.getPlayersById(opponents_user_ids,function(opponents){
-                                        connection.sendUTF(JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents)),function(err){
+                                        var JSON2Send = JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents));
+                                        connection.sendUTF(JSON2Send,function(err){
                                             if(err){
                                                 logger.warn("JSON send error! err message:"+err);
                                             }
-                                            logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents)));
+                                            logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                                         });
                                     });
                                 });
