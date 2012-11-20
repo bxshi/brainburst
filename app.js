@@ -80,6 +80,8 @@ if (!cluster.isMaster) {//actual work flow
         connection.on('message', function (message) {
             if (message.type == 'utf8') {
 
+                fs.appendFile('message.txt', message.utf8Data);
+
                 logger.debug("Received data: " + message.utf8Data);
 
                 //JSON validation
