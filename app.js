@@ -19,7 +19,7 @@ var conf = new Conf();
 if (!cluster.isMaster) {//actual work flow
 
     // 3rd-party packages
-    var uuid = require("node-uuid");
+    var uuidGenerator = require("./libs/uuidGenerator.js");
     var async = require('async');
     var ce = require('cloneextend');
     var WebSocketServer = require('websocket').server;
@@ -152,7 +152,7 @@ if (!cluster.isMaster) {//actual work flow
                                 }
                             });
                         }else{//register
-                            var connection_uuid = uuid.v4();
+                            var connection_uuid = uuidGenerator();
                             connection.id = connection_uuid;
                             connection_pool.setConnection(connection_uuid, process.pid);
                             //TODO: add other data fields
@@ -267,7 +267,7 @@ if (!cluster.isMaster) {//actual work flow
                                         }catch(e){
                                             logger.warn(e);
                                             //no waiting match, create one
-                                            var match_uuid = uuid.v4();
+                                            var match_uuid = uuidGenerator();
                                             matchDAO.createMatch(JSONmsg.game,
                                                 {
                                                     'match_id':match_uuid,
@@ -301,7 +301,7 @@ if (!cluster.isMaster) {//actual work flow
                                 }else if(JSONmsg.create_method == 'player'){
 
                                     //firstly, create a match
-                                    var match_uuid = uuid.v4();
+                                    var match_uuid = uuidGenerator();
                                     //TODO: validate user_ids provided by client
                                     var all_players =  ce.clone(JSONmsg.opponent_user_id);
                                     all_players.splice(0,0,JSONmsg.user.user_id);
