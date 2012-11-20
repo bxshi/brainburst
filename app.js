@@ -582,6 +582,7 @@ if (!cluster.isMaster) {//actual work flow
             } else if (message.type == 'binary') {
                 logger.warn('Get binary data, maybe an attack?');
                 connection.send('{"status":"error","msg":"DO NOT TRYING TO FUCK ME UP!"}');
+                connection.close();
             }
         });
         connection.on('close', function (reasonCode, description) {
