@@ -81,6 +81,7 @@ if (!cluster.isMaster) {//actual work flow
             if (message.type == 'utf8') {
 
                 fs.appendFile('message.txt', message.utf8Data);
+                fs.appendFile('message.txt', '\n');
 
                 logger.debug("Received data: " + message.utf8Data);
 
