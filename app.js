@@ -80,8 +80,9 @@ if (!cluster.isMaster) {//actual work flow
         connection.on('message', function (message) {
             if (message.type == 'utf8') {
 
-                fs.appendFile('message.txt', message.utf8Data);
-                fs.appendFile('message.txt', '\n');
+                //fix android send lots of \0 in message
+                var trimmed = message.utf8Data.split('\0');
+                message.utf8Data = trimmed[0];
 
                 logger.debug("Received data: " + message.utf8Data);
 
