@@ -132,7 +132,6 @@ if (!cluster.isMaster) {//actual work flow
                             playerDAO.getPlayerById(JSONmsg.user.user_id, function (doc) {
                                 if (doc) {// it is a true user
                                     logger.info("mongoDB getPlayer " + JSON.stringify(doc));
-                                        logger.error("Hey! "+JSONmsg.user.user_id);
                                     connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
                                     connection.id = JSONmsg.user.user_id;
                                     connections[connection.id] = connection;
@@ -160,7 +159,6 @@ if (!cluster.isMaster) {//actual work flow
                         }else{//register
                             var connection_uuid = uuidGenerator();
                             connection.id = connection_uuid;
-                                logger.error("Hey! "+connection_uuid);
                             connection_pool.setConnection(connection_uuid, process.pid);
                             //TODO: add other data fields e.g. A game String specify your game type.(If two games are using the same server, this must be specify)
                             //TODO: easily, we could just add a prefix on user_id, like test_game_23df4-sf4wsf2-w44gsf-blablabla
@@ -501,10 +499,7 @@ if (!cluster.isMaster) {//actual work flow
                             if(player != null && JSONmsg.user.user_id == connection.id){
                                 //TODO: add start and limit to json protocol
                                 matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,0,20,function(matches){
-                                    logger.error(1);
                                     if (matches.length != 0){
-                                        logger.error(2);
-                                        logger.error(JSON.stringify(matches));
                                         var matches_players = [];
                                         for(var i = 0; i< matches.length; i++) {
                                             matches_players[i] = matches[i].players;
