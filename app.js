@@ -498,7 +498,15 @@ if (!cluster.isMaster) {//actual work flow
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
                                 //TODO: add start and limit to json protocol
-                                matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,0,20,function(matches){
+                                var start = 0;
+                                var limit = 20;
+                                if(JSONmsg.start!=undefined && (typeof JSONmsg.start) == (typeof 1)){
+                                    start = JSONmsg.start;
+                                }
+                                if(JSONmsg.limit!=undefined && (typeof JSONmsg.limit) == (typeof 1)){
+                                    limit = JSONmsg.limit;
+                                }
+                                matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,start,limit,function(matches){
                                     if (matches.length != 0){
                                         var matches_players = [];
                                         for(var i = 0; i< matches.length; i++) {
@@ -556,6 +564,17 @@ if (!cluster.isMaster) {//actual work flow
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
                                 connection_pool.getOnline(JSONmsg.user.user_id, function(opponents_user_ids){
+                                    var start=0;
+                                    var limit=20;
+                                    if(JSONmsg.start != undefined && (typeof JSONmsg.start) == (typeof 1)){
+                                        start = JSONmsg.start;
+                                    }
+                                    if(JSONmsg.limit != undefined && (typeof JSONmsg.limit) == (typeof 1)){
+                                        limit = JSONmsg.limit;
+                                    }
+                                    //trim opponents_user_id
+                                    opponents_user_ids.splice(0,start);
+                                    opponents_user_ids.splice(start+limit,opponents_user_ids.length - start - limit);
                                     playerDAO.getPlayersById(opponents_user_ids,function(opponents){
                                         var JSON2Send = JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents));
                                         connection.sendUTF(JSON2Send,function(err){

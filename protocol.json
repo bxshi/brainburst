@@ -127,7 +127,9 @@
         "game" : "game string",
         "user" : {
             "user_id": "userUUID"
-        }
+        },
+        "start" : "an integer, if not have field, it will be 0",
+        "limit" : "an integer, if not have this field, it will be 10"
     },
     {//user will get this.
         "msg_id" : 5,
@@ -148,7 +150,9 @@
         "type" : "online_players",
         "user" : {
             "user_id" : "user UUID"
-        }
+        },
+        "start" : "an integer, if not have field, it will be 0",
+        "limit" : "an integer, if not have this field, it will be 20"
     },
     {//user get online gamers
         "msg_id" : 6,
