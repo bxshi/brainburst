@@ -614,7 +614,7 @@ if (!cluster.isMaster) {//actual work flow
     wsServer.on('close', function(connection, reason, description){
         connection_pool.delConnection(connection.id, function () {
             delete connections[connection.id];
-        });
+        }); //re-delete to make sure
         logger.info("Peer " + connection.id + " disconnected");
         connection.close();
     });
@@ -739,7 +739,8 @@ if (!cluster.isMaster) {//actual work flow
     });
 
     cluster.on('exit', function (worker, code, signal) {
-        logger.error('worker ' + worker.process.pid + ' terminated');
+        logger.error('worker ' + worker.process.pid + ' terminated by singal '+signal+" and code "+code);
+        //TODO: delete connections created by this worker in Redis. But usually it will not closed.
     });
 
 
