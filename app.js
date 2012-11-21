@@ -693,6 +693,7 @@ if (!cluster.isMaster) {//actual work flow
                                 if(pid == null){//already disconnected
                                     //DONE: add restore push
                                     logger.warn("user is not online! push send error, user_id:"+user_id+" restore push:"+JSON.stringify(message.json));
+                                    //TODO: there is an order problem here, if client really got some problems here, this will be changed.
                                     queue.pushToFront(user_id,JSON.stringify(message.json), function(err,reply){
                                         if(err){
                                             logger.error("restore push save error, "+err);
