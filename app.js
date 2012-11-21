@@ -495,7 +495,8 @@ if (!cluster.isMaster) {//actual work flow
                         //validate login
                         playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
                             if(player != null && JSONmsg.user.user_id == connection.id){
-                                matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,0,100,function(matches){
+                                //TODO: add start and limit to json protocol
+                                matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,0,20,function(matches){
                                     logger.error(1);
                                     if (matches.length != 0){
                                         logger.error(2);
