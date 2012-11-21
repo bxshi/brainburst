@@ -22,16 +22,12 @@ module.exports = function(){
                 redis:{
                     host : '127.0.0.1',
                     port : 6379,
-                    options : {
-                        database : 'letter_press_push_deploy'
-                    }
+                    db : 3
                 },
                 redisConnectionPool:{
                     host:'127.0.0.1',
                     port:6379,
-                    options : {
-                        database : 'letter_press_connection_pool_deploy'
-                    }
+                    db : 5
                 }
             }
         case 'development':
@@ -48,18 +44,15 @@ module.exports = function(){
                 redis:{
                     host : '127.0.0.1',
                     port : 6379,
-                    options : {
-                        database : 'letter_press_push'
-                    }
+                    db : 3
                 },
                 redisConnectionPool:{
                     host:'127.0.0.1',
                     port:6379,
-                    options : {
-                        database : 'letter_press_connection_pool'
-                    }
+                    db : 5
                 }
             }
         default:
+            return null
     }
 }

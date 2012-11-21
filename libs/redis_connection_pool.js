@@ -10,10 +10,13 @@ var logger = require('./logger.js')
 var redis = require("redis");
 var Conf = require('../configuration.js');
 var conf = new Conf();
-var client = redis.createClient(conf.redisConnectionPool.port,conf.redisConnectionPool.host, conf.redisConnectionPool.options);
+var client = redis.createClient(conf.redisConnectionPool.port,conf.redisConnectionPool.host);
 
 
 module.exports = {
+  selectDB : function(cb){
+      client.select(conf.redisConnectionPool.db, cb);
+  },
   setConnection :   function(uuid, connection) {
       client.set(uuid, connection);
   },

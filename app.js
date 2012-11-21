@@ -29,6 +29,7 @@ if (!cluster.isMaster) {//actual work flow
 
     // Self-defined libs
     var connection_pool = require('./libs/redis_connection_pool.js');
+    connection_pool.selectDB();
     var mongo = require('./libs/MongoDBConnection.js');
     var mongoClient = new mongo.MongoDBConnection(conf.mongo);
     var player = require('./libs/PlayerDAO.js');
@@ -131,6 +132,7 @@ if (!cluster.isMaster) {//actual work flow
                             playerDAO.getPlayerById(JSONmsg.user.user_id, function (doc) {
                                 if (doc) {// it is a true user
                                     logger.info("mongoDB getPlayer " + JSON.stringify(doc));
+                                        logger.error("Hey! "+JSONmsg.user.user_id);
                                     connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
                                     connection.id = JSONmsg.user.user_id;
                                     connections[connection.id] = connection;
@@ -158,8 +160,10 @@ if (!cluster.isMaster) {//actual work flow
                         }else{//register
                             var connection_uuid = uuidGenerator();
                             connection.id = connection_uuid;
+                                logger.error("Hey! "+connection_uuid);
                             connection_pool.setConnection(connection_uuid, process.pid);
-                            //TODO: add other data fields
+                            //TODO: add other data fields e.g. A game String specify your game type.(If two games are using the same server, this must be specify)
+                            //TODO: easily, we could just add a prefix on user_id, like test_game_23df4-sf4wsf2-w44gsf-blablabla
                             var user = {user_id:connection.id, user_data:JSONmsg.user.user_data};
                             playerDAO.createPlayer(user, function () {
                                 logger.debug("create an user " + JSON.stringify(user));
@@ -594,6 +598,9 @@ if (!cluster.isMaster) {//actual work flow
     });
 
     wsServer.on('close', function(connection, reason, description){
+        connection_pool.delConnection(connection.id, function () {
+            delete connections[connection.id];
+        });
         logger.info("Peer " + connection.id + " disconnected");
         connection.close();
     });
@@ -636,12 +643,15 @@ if (!cluster.isMaster) {//actual work flow
 
     //clear redis-connection-pool's data
     var redisConnectionPoolClient = require('./libs/redis_connection_pool.js');
-    redisConnectionPoolClient.flush();
-    logger.info("Redis connection pool flushed");
+    redisConnectionPoolClient.selectDB(function(){
+        redisConnectionPoolClient.flush();
+        logger.info("Redis connection pool flushed");
+    });
 
     var PushQueue = require('./libs/PushQueue.js').PushQueue;
     var redisPush = require('./libs/RedisConnection.js').RedisConnection;
     var redisPushClient = new redisPush(conf.redis);
+    redisPushClient.selectdb();
     var queue = new PushQueue(redisPushClient);
     var workers={};
     //fork worker
