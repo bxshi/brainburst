@@ -25,7 +25,8 @@ PlayerDAO.prototype.getPlayerById = function(id, cb) {
 
 PlayerDAO.prototype.getPlayersById = function(id_list, cb) {
     this.connection.query(collectionName, function(collection){
-        collection.find({'user_id':{'$in':id_list}}).toArray(function(err,docs){
+        //TODO: add limit, start to json protocol
+        collection.find({'user_id':{'$in':id_list}},{'limit':20, 'start':0}).toArray(function(err,docs){
             if(err){
                 throw err;
             }
