@@ -86,9 +86,15 @@ module.exports = {
         //console.dir(JSONObj);
         return JSONObj;
     },
-    submit_match_push_builder : function(user_id,match){
+    submit_match_push_builder : function(user_id,match, players){
         var JSONObj = {'msg_id':-1, 'type':'update_match'};
         JSONObj.match = {'match_id':match.match_id,'from_opponent':user_id,'match_data':match.match_data};
+        if(players){
+            JSONObj.match.players = [];
+            for(var i=0;i<players.length;i++){
+                JSONObj.match.players[i] ={'user_id':players[i].user_id,'user_data':players[i].user_data};
+            }
+        }
         //console.dir(JSONObj);
         return JSONObj;
     },

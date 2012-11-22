@@ -460,9 +460,20 @@ if (!cluster.isMaster) {//actual work flow
                                                 logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                                             });
                                             //push to all players
-                                            var Push2Send = JSONBuilder.submit_match_push_builder(JSONmsg.user.user_id,match);
-                                            process.send({'type':'new_push','receiver':match.players,'json':Push2Send});
-                                            logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+match.players+", json is "+JSON.stringify(Push2Send));
+
+                                            playerDAO.getPlayersById(match.players, function(players){
+                                                //send json back to client
+                                                //TODO: optimize sort function
+                                                var players_sorted=[];
+                                                for(var i=0; i<players.length;i++){
+                                                    players_sorted[match.players.indexOf(players[i].user_id)] = players[i];
+                                                }
+                                                var Push2Send = JSONBuilder.submit_match_push_builder(JSONmsg.user.user_id,match,players_sorted);
+                                                process.send({'type':'new_push','receiver':match.players,'json':Push2Send});
+                                                logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+match.players+", json is "+JSON.stringify(Push2Send));
+                                            });
+
+
                                         });
                                     }else{
                                         connection.sendUTF(JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")),function(err){

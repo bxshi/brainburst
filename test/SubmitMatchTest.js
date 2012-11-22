@@ -93,6 +93,8 @@ describe('# Submit Match Test',function(){
                     }
                 }else if(JSONmsg.msg_id == -1 && JSONmsg.type == "update_match"){
                     should.exists(JSONmsg.match.from_opponent);
+                    should.exists(JSONmsg.match.players);
+                    JSONmsg.match.players.length.should.above(0);
 //                    console.log("js:"+JSONmsg.match.from_opponent+" worker:"+workers[i].user.user_id+" invitation:"+workers[invitation_index].user.user_id+" opponent:"+workers[opponent_index].user.user_id);
                     if(JSONmsg.match.from_opponent == workers[i].user.user_id){
                         JSONmsg.match.match_data.should.equal("round1");
