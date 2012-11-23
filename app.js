@@ -232,6 +232,7 @@ if (!cluster.isMaster) {//actual work flow
                                 if(JSONmsg.create_method == 'auto'){
                                     //search for existing waiting match
                                     matchDAO.ensureIndex(JSONmsg.game);
+                                    //TODO: Where there be a problem that A submit data, and while this B got this data?
                                     matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function(match){
                                         //TODO: Maybe need add error handling?
                                         try{
