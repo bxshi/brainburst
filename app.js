@@ -26,6 +26,7 @@ if (!cluster.isMaster) {//actual work flow
     var http = require('http');
     var https = require('https');
     var fs = require('fs');
+    var zlib = require('zlib');
 
     // Self-defined libs
     var connection_pool = require('./libs/redis_connection_pool.js');
@@ -41,18 +42,33 @@ if (!cluster.isMaster) {//actual work flow
     var matchDAO = new match.MatchDAO(mongoClient);
     var playerDAO = new player.PlayerDAO(mongoClient);
 
-    var server = http.createServer(function (request, response) {
-        logger.warn("Received http request for " + request.url + " that maybe an attack?");
-        response.writeHead(404);
-        response.end();
+
+
+    var options = {
+        key: fs.readFileSync('./ssl/server.key'),
+        passphrase: 'BrainBurst',
+        cert: fs.readFileSync('./ssl/server.crt')
+    };
+
+    var httpsServer = https.createServer(options, function (req, res) {
+        logger.warn("Received http request for " + req.url + " that maybe an attack?");
+        res.writeHead(404);
+        res.end();
     });
 
-    server.listen(conf.WebSocketPort, function () {
+
+//    var server = http.createServer(function (request, response) {
+//        logger.warn("Received http request for " + request.url + " that maybe an attack?");
+//        response.writeHead(404);
+//        response.end();
+//    });
+
+    httpsServer.listen(conf.WebSocketPort, function () {
         logger.info('Server started, listening on port' + conf.WebSocketPort);
     });
 
     wsServer = new WebSocketServer({
-        httpServer:server,
+        httpServer:httpsServer,
 
         //long-connection settings
         keepalive:true,
@@ -612,6 +628,9 @@ if (!cluster.isMaster) {//actual work flow
 
             } else if (message.type == 'binary') {
                 logger.warn('Get binary data, maybe an attack?');
+                zlib.unzip(message.binaryData, function(err, buffer){
+                    console.log(buffer.toString());
+                });
                 connection.send('{"status":"error","msg":"DO NOT TRYING TO FUCK ME UP!"}');
                 connection.close();
             }
