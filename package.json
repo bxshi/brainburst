@@ -18,7 +18,9 @@
         "mongodb" : "*",
         "cloneextend" : "*",
         "fs" : "*",
-        "zlib" : "*"
+        "zlib" : "*",
+        "events" : "*",
+        "util" : "*"
     },
 
     "engines" : "0.8.x"
