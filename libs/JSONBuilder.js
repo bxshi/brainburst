@@ -86,6 +86,11 @@ module.exports = {
         //console.dir(JSONObj);
         return JSONObj;
     },
+    leave_match_builder : function(msg_id, match_id){
+        var JSONObj = {'msg_id':msg_id, 'type':'leave_match', 'status':'ok'};
+        JSONObj.match = {'match_id' : match_id};
+        return JSONObj;
+    },
     submit_match_push_builder : function(user_id,match, players){
         var JSONObj = {'msg_id':-1, 'type':'update_match'};
         JSONObj.match = {'match_id':match.match_id,'from_opponent':user_id,'match_data':match.match_data};
@@ -122,6 +127,10 @@ module.exports = {
             JSONObj.opponents[i] = {'user_id':opponents[i].user_id,'user_data':opponents[i].user_data};
         }
         //console.dir(JSONObj);
+        return JSONObj;
+    },
+    error_builder : function(){
+        var JSONObj = {'status':"error", "msg":"requested json does not contains msg_id or type"};
         return JSONObj;
     }
 }

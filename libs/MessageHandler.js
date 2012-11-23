@@ -9,76 +9,90 @@
 
 var JSONValidation = require('./JSONValidation.js');
 
-var EventEmitter = require('events').EventEmitter();
+var EventEmitter = require('events').EventEmitter;
 var util = require('util');
-
-var MessageHandler = function() {
-
-};
 
 var errorMsgHandler = 'IllegalJSON';
 
+
+var MessageHandler = function MessageHandler(){
+    EventEmitter.call(this);
+};
+
+util.inherits(MessageHandler, EventEmitter);
+
 //check JSONmsg.type and emit different events
-MessageHandler.prototype.route = function(connection, JSONstr){
+MessageHandler.prototype.route = function(connection, JSONstr, type){
     try{
         var JSONmsg = JSON.parse(JSONstr);
     }catch(e){
         //Can not parse to a JSON
-        self.emit('NotJSON', connection);
+        this.emit('NotJSON', connection);
         return;
     }
 
     if(!JSONValidation.json_validation(JSONmsg)){
-        self.emit(errorMsgHandler, connection);
+        this.emit(errorMsgHandler, connection);
         return;
     }
 
+    /*
+     *
+     * If new JSON string is designed in the future, add a case and emit a event
+     *
+     */
     switch(JSONmsg.type){
         case 'user_login':
             if(JSONValidation.user_login(JSONmsg)){
-                self.emit('UserLogin', connection, JSONmsg);
+                this.emit('UserLogin', connection, JSONmsg, type);
             }else{
-                self.emit(errorMsgHandler, connection, JSONmsg);
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
             }
             break;
         case 'change_profile':
             if(JSONValidation.change_profile(JSONmsg)){
-                self.emit('ChangeProfile', connection, JSONmsg);
+                this.emit('ChangeProfile', connection, JSONmsg, type);
             }else{
-                self.emit(errorMsgHandler, connection, JSONmsg);
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
             }
             break;
         case 'create_match':
             if(JSONValidation.create_match(JSONmsg)){
-                self.emit('CreateMatch', connection, JSONmsg);
+                this.emit('CreateMatch', connection, JSONmsg, type);
             }else{
-                self.emit(errorMsgHandler, connection, JSONmsg);
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
             }
             break;
         case 'leave_match':
             if(JSONValidation.leave_match(JSONmsg)){
-                self.emit('LeaveMatch', connection, JSONmsg);
+                this.emit('LeaveMatch', connection, JSONmsg, type);
             }else{
-                self.emit(errorMsgHandler, connection, JSONmsg);
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
             }
             break;
         case 'submit_match':
             if(JSONValidation.submit_match(JSONmsg)){
-                self.emit('SubmitMatch', connection, JSONmsg);
+                this.emit('SubmitMatch', connection, JSONmsg, type);
             }else{
-                self.emit(errorMsgHandler, connection, JSONmsg);
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
             }
             break;
         case 'get_matches':
-            self.emit('GetMatches', connection, JSONmsg);
+            if(JSONValidation.get_matches(JSONmsg)){
+                this.emit('GetMatches', connection, JSONmsg, type);
+            }else{
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
+            }
             break;
         case 'online_players':
-            self.emit('OnlinePlayers', connection, JSONmsg);
+            if(JSONValidation.online_players(JSONmsg)){
+                this.emit('OnlinePlayers', connection, JSONmsg, type);
+            }else{
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
+            }
             break;
         default:
-            self.emit(errorMsgHandler);
+            this.emit(errorMsgHandler, connection, type);
     }
 };
-
-util.inherits(MessageHandler,EventEmitter);
 module.exports = MessageHandler;
