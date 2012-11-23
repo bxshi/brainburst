@@ -289,24 +289,15 @@ if (!cluster.isMaster) {//actual work flow
                                         players_sorted[match.players.indexOf(players[i].user_id)] = players[i];
                                     }
                                     var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players_sorted));
-                                    if(msgType == 'binary'){
-                                        zlib.gzip(JSON2Send, function(err, buffer){
-                                            if(!err){
-                                                connection.sendBytes(buffer);
-                                            }else{
-                                                logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                            }
-                                            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                                    zlib.gzip(JSON2Send, function(err, buffer){
+                                        if(!err){
+                                            connection.sendBytes(buffer);
+                                        }else{
+                                            logger.warn("send "+connection.id+" binary JSON error:"+err);
+                                        }
+                                        logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-                                        });
-                                    }else{
-                                        connection.sendUTF(JSON2Send,function(err){
-                                            if(err){
-                                                logger.warn("JSON send error! err message:"+err);
-                                            }
-                                            logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
-                                        });
-                                    }
+                                    });
                                     //DONE:send push to others
                                     //If you want send push to all players in this game, change receiver from `push_players` to `match['players']`
                                     var Push2Send = JSONBuilder.join_match_push_builder(match,players);
@@ -339,24 +330,14 @@ if (!cluster.isMaster) {//actual work flow
                                             players_sorted[match.players.indexOf(players[i].user_id)] = players[i];
                                         }
                                         var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players_sorted));
-                                        if(msgType == 'binary'){
-                                            zlib.gzip(JSON2Send, function(err, buffer){
-                                                if(!err){
-                                                    connection.sendBytes(buffer);
-                                                }else{
-                                                    logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                                }
-                                                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
-
-                                            });
-                                        }else{
-                                            connection.sendUTF(JSON2Send,function(err){
-                                                if(err){
-                                                    logger.warn("JSON send error! err message:"+err);
-                                                }
-                                                logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
-                                            });
-                                        }
+                                        zlib.gzip(JSON2Send, function(err, buffer){
+                                            if(!err){
+                                                connection.sendBytes(buffer);
+                                            }else{
+                                                logger.warn("send "+connection.id+" binary JSON error:"+err);
+                                            }
+                                            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                                        });
                                     });
                                 });
                         }
@@ -396,24 +377,14 @@ if (!cluster.isMaster) {//actual work flow
                                 }
                                 //send json back to client
                                 var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players_sorted));
-                                if(msgType == 'binary'){
-                                    zlib.gzip(JSON2Send, function(err, buffer){
-                                        if(!err){
-                                            connection.sendBytes(buffer);
-                                        }else{
-                                            logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                        }
-                                        logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
-
-                                    });
-                                }else{
-                                    connection.sendUTF(JSON2Send,function(err){
-                                        if(err){
-                                            logger.warn("JSON send error! err message:"+err);
-                                        }
-                                    });
-                                }
-
+                                zlib.gzip(JSON2Send, function(err, buffer){
+                                    if(!err){
+                                        connection.sendBytes(buffer);
+                                    }else{
+                                        logger.warn("send "+connection.id+" binary JSON error:"+err);
+                                    }
+                                    logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                                });
                                 //DONE: add create_match's push notifications
                                 //**This only pushes to players who were invited (exclude the one who create this match)**
                                 //if you want to include the creator, change receiver from `JSONmsg.opponent_user_id` to `all_players`
@@ -454,24 +425,16 @@ if (!cluster.isMaster) {//actual work flow
                                     players_sorted[match.players.indexOf(players[i].user_id)] = players[i];
                                 }
                                 var JSON2Send = JSON.stringify(JSONBuilder.leave_match_builder(JSONmsg.msg_id, JSONmsg.match.match_id));
-                                if(msgType == 'binary'){
-                                    zlib.gzip(JSON2Send, function(err, buffer){
-                                        if(!err){
-                                            connection.sendBytes(buffer);
-                                        }else{
-                                            logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                        }
-                                        logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                                zlib.gzip(JSON2Send, function(err, buffer){
+                                    if(!err){
+                                        connection.sendBytes(buffer);
+                                    }else{
+                                        logger.warn("send "+connection.id+" binary JSON error:"+err);
+                                    }
+                                    logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-                                    });
-                                }else{
-                                    connection.sendUTF(JSON2Send,function(err){
-                                        if(err){
-                                            logger.warn("JSON send error! err message:"+err);
-                                        }
-                                        logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
-                                    });
-                                }
+                                });
+
                                 //send `leave_match` push
                                 //Check players, if it is empty, do not create push
                                 if(match.players.length>0){
@@ -481,25 +444,15 @@ if (!cluster.isMaster) {//actual work flow
                         });
                     }catch(e){
                         var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e));
-                        if(msgType == 'binary'){
-                            zlib.gzip(JSON2Send, function(err, buffer){
-                                if(!err){
-                                    connection.sendBytes(buffer);
-                                }else{
-                                    logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                }
-                                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                        zlib.gzip(JSON2Send, function(err, buffer){
+                            if(!err){
+                                connection.sendBytes(buffer);
+                            }else{
+                                logger.warn("send "+connection.id+" binary JSON error:"+err);
+                            }
+                            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-                            });
-                        }else{
-                            connection.sendUTF(JSON2Send,function(err){
-                                if(err){
-                                    logger.warn("JSON send error! err message:"+err);
-                                }
-                                logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
-                                logger.error("client send a non-exists match id!");
-                            });
-                        }
+                        });
                     }
                 });
             }else{
@@ -520,24 +473,15 @@ if (!cluster.isMaster) {//actual work flow
                         match.match_data = JSONmsg.match.match_data;
                         matchDAO.updateMatch(JSONmsg.game,JSONmsg.match.match_id,match,function(){
                             var JSON2Send = JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id));
-                            if(msgType == 'binary'){
-                                zlib.gzip(JSON2Send, function(err, buffer){
-                                    if(!err){
-                                        connection.sendBytes(buffer);
-                                    }else{
-                                        logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                    }
-                                    logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                            zlib.gzip(JSON2Send, function(err, buffer){
+                                if(!err){
+                                    connection.sendBytes(buffer);
+                                }else{
+                                    logger.warn("send "+connection.id+" binary JSON error:"+err);
+                                }
+                                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-                                });
-                            }else{
-                                connection.sendUTF(JSON2Send,function(err){
-                                    if(err){
-                                        logger.warn("JSON send error! err message:"+err);
-                                    }
-                                    logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
-                                });
-                            }
+                            });
                             //push to all players
 
                             playerDAO.getPlayersById(match.players, function(players){
@@ -556,23 +500,16 @@ if (!cluster.isMaster) {//actual work flow
                         });
                     }else{
                         var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists"));
-                        if(msgType == 'binary'){
-                            zlib.gzip(JSON2Send, function(err, buffer){
-                                if(!err){
-                                    connection.sendBytes(buffer);
-                                }else{
-                                    logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                }
-                                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                        zlib.gzip(JSON2Send, function(err, buffer){
+                            if(!err){
+                                connection.sendBytes(buffer);
+                            }else{
+                                logger.warn("send "+connection.id+" binary JSON error:"+err);
+                            }
+                            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-                            });
-                        }else{
-                            connection.sendUTF(JSON2Send,function(err){
-                                if(err){
-                                    logger.warn("JSON send error! err message:"+err);
-                                }
-                            });
-                        }
+                        });
+
                         logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")));
                     }
                 });
@@ -612,29 +549,6 @@ if (!cluster.isMaster) {//actual work flow
                                 }
                             }
                             var JSON2Send = JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches,players_sorted));
-                            if(msgType == 'binary'){
-                                zlib.gzip(JSON2Send, function(err, buffer){
-                                    if(!err){
-                                        connection.sendBytes(buffer);
-                                    }else{
-                                        logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                    }
-                                    logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
-
-                                });
-                            }else{
-                                connection.sendUTF(JSON2Send,function(err){
-                                    if(err){
-                                        logger.warn("JSON send error! err message:"+err);
-                                    }
-                                    logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
-                                });
-                            }
-                        });
-                    }else{
-                        logger.error("NOMATCHES");
-                        var JSON2Send = JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,null,null));
-                        if(msgType == 'binary'){
                             zlib.gzip(JSON2Send, function(err, buffer){
                                 if(!err){
                                     connection.sendBytes(buffer);
@@ -644,13 +558,19 @@ if (!cluster.isMaster) {//actual work flow
                                 logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
                             });
-                        }else{
-                            connection.sendUTF(JSON2Send,function(err){
-                                if(err){
-                                    logger.warn("JSON send error! err message:"+err);
-                                }
-                            });
-                        }
+                        });
+                    }else{
+                        logger.error("NOMATCHES");
+                        var JSON2Send = JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,null,null));
+                        zlib.gzip(JSON2Send, function(err, buffer){
+                            if(!err){
+                                connection.sendBytes(buffer);
+                            }else{
+                                logger.warn("send "+connection.id+" binary JSON error:"+err);
+                            }
+                            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+
+                        });
                         logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
                     }
                 });
@@ -679,24 +599,15 @@ if (!cluster.isMaster) {//actual work flow
                     opponents_user_ids.splice(start+limit,opponents_user_ids.length - start - limit);
                     playerDAO.getPlayersById(opponents_user_ids,function(opponents){
                         var JSON2Send = JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents));
-                        if(msgType == 'binary'){
-                            zlib.gzip(JSON2Send, function(err, buffer){
-                                if(!err){
-                                    connection.sendBytes(buffer);
-                                }else{
-                                    logger.warn("send "+connection.id+" binary JSON error:"+err);
-                                }
-                                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                        zlib.gzip(JSON2Send, function(err, buffer){
+                            if(!err){
+                                connection.sendBytes(buffer);
+                            }else{
+                                logger.warn("send "+connection.id+" binary JSON error:"+err);
+                            }
+                            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-                            });
-                        }else{
-                            connection.sendUTF(JSON2Send,function(err){
-                                if(err){
-                                    logger.warn("JSON send error! err message:"+err);
-                                }
-                                logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
-                            });
-                        }
+                        });
                     });
                 });
             }else{
@@ -708,7 +619,21 @@ if (!cluster.isMaster) {//actual work flow
 
     msgHandler.on('NotJSON', function(connection, msgType){
         var JSON2Send = JSON.stringify({'status':"error", 'msg':"hey, DO not try to fuck me up!"});
-        if(msgType == 'binary'){
+        zlib.gzip(JSON2Send, function(err, buffer){
+            if(!err){
+                connection.sendBytes(buffer);
+                connection.close();
+            }else{
+                logger.warn("send "+connection.id+" binary JSON error:"+err);
+            }
+            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+
+        });
+    });
+
+    msgHandler.on('IllegalJSON', function(connection, JSONmsg, msgType){
+        if(JSONmsg){
+            var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id, "json illegal"));
             zlib.gzip(JSON2Send, function(err, buffer){
                 if(!err){
                     connection.sendBytes(buffer);
@@ -719,55 +644,19 @@ if (!cluster.isMaster) {//actual work flow
                 logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
             });
-        }else{
-            connection.sendUTF(JSON2Send);
-            connection.close();
-        }
-    });
-
-    msgHandler.on('IllegalJSON', function(connection, JSONmsg, msgType){
-        if(JSONmsg){
-            var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id, "json illegal"));
-            if(msgType == 'binary'){
-                zlib.gzip(JSON2Send, function(err, buffer){
-                    if(!err){
-                        connection.sendBytes(buffer);
-                        connection.close();
-                    }else{
-                        logger.warn("send "+connection.id+" binary JSON error:"+err);
-                    }
-                    logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
-
-                });
-            }else{
-                connection.sendUTF(JSON2Send, function(err){
-                    if(err){
-                        logger.warn("JSON send error! err message:"+err);
-                    }
-                });
-            }
             logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
         }else{
             var JSON2Send = JSON.stringify(JSONBuilder.error_builder());
-            if(msgType == 'binary'){
-                zlib.gzip(JSON2Send, function(err, buffer){
-                    if(!err){
-                        connection.sendBytes(buffer);
-                        connection.close();
-                    }else{
-                        logger.warn("send "+connection.id+" binary JSON error:"+err);
-                    }
-                    logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+            zlib.gzip(JSON2Send, function(err, buffer){
+                if(!err){
+                    connection.sendBytes(buffer);
+                    connection.close();
+                }else{
+                    logger.warn("send "+connection.id+" binary JSON error:"+err);
+                }
+                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-                });
-            }else{
-                connection.sendUTF(JSON2Send, function(err){
-                    if(err){
-                        logger.warn("JSON send error! err message:"+err);
-                    }
-                    logger.warn("get a request without a msg_id or type, connection from "+connection.remoteAddress+" closed.");
-                });
-            }
+            });
         }
     });
 
@@ -778,21 +667,23 @@ if (!cluster.isMaster) {//actual work flow
             for(var id in message.receiver){
                 if(connections[message.receiver[id]]!=undefined) {
                     //what if the connection is dropped just after this ?
-                    try{
-                        connections[message.receiver[id]].sendUTF(JSON.stringify(message.json), function(err){
-                            if(err){
-                                logger.debug("push send status"+err);
-                                throw "user not online";
-                            }else{
+                    zlib.gzip(JSON.stringify(message.json), function(err, buffer){
+                        try{
+                            if(!err){
                                 logger.debug("push send to "+message.receiver[id]+" ok");
+                                connections[message.receiver[id]].sendBytes(buffer);
+                                connections[message.receiver[id]].close();
+                            }else{
+                                logger.debug("push send status"+err);
                             }
-                        });
-                    }catch(e){
-                        logger.debug(e);
-                        logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
-                        //push failed, put it back.
-                        process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
-                    }
+                        }catch(e){
+                            logger.debug(e);
+                            logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
+                            //push failed, put it back.
+                            process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
+                        }
+
+                    });
                 }else{
                     logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
                     //push failed, put it back.
