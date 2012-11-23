@@ -85,7 +85,7 @@ describe('# Leave Match Test',function(){
                     JSONmsg.match.players[0].should.have.property('user_id');
                     JSONmsg.match.players[0].should.have.property('user_data');
 //                    JSONmsg.match.players.should.include(workers[i].user.user_id);
-                }else if(JSONmsg.type == "leave_match"){//get push about "leave_match"
+                }else if(JSONmsg.type == "leave_match" && JSONmsg.msg_id == -1){//get push about "leave_match"
                     should.exists(JSONmsg.match);
                     should.exists(JSONmsg.match.players);
                     JSONmsg.match.players[0].should.have.property('user_id');
