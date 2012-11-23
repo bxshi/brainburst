@@ -118,7 +118,8 @@
         "match" : {
             "match_id" : "match_UUID",
             "from_opponent" : "user_uuid",
-            "match_data" : "client defined"
+            "match_data" : "client defined",
+            "players" : []
         }
     },
     {//user send to get list of matches
