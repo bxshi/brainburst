@@ -63,6 +63,13 @@ MessageHandler.prototype.route = function(connection, JSONstr, type){
                 this.emit(errorMsgHandler, connection, JSONmsg, type);
             }
             break;
+        case 'bot_match':
+            if(JSONValidation.bot_match(JSONmsg)){
+                this.emit('BotMatch', connection, JSONmsg, type);
+            }else{
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
+            }
+            break;
         case 'leave_match':
             if(JSONValidation.leave_match(JSONmsg)){
                 this.emit('LeaveMatch', connection, JSONmsg, type);

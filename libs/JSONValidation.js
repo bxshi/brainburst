@@ -82,6 +82,21 @@ module.exports = {
 
         return true;
     },
+    bot_match : function(JSONmsg){
+      if(!normalValidation(JSONmsg)){
+          return false;
+      }
+      if(JSONmsg.type == undefined || JSONmsg.type != 'bot_match'){
+          return false;
+      }
+      if(JSONmsg.create_method != 'auto'){
+          return false;
+      }
+      if(JSONmsg.user == undefined || JSONmsg.user.user_id == undefined){
+          return false;
+      }
+      return true;
+    },
     leave_match : function(JSONmsg){
         if(!normalValidation(JSONmsg)){
             return false;

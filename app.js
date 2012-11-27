@@ -111,7 +111,7 @@ if (!cluster.isMaster) {//actual work flow
                 //fix android send lots of \0 in message
                 var trimmed = message.utf8Data.split('\0');
                 message.utf8Data = trimmed[0];
-                msgHandler.route(connection, message.utf8Data);
+                msgHandler.route(connection, message.utf8Data, message.type);
             }
 
         });
@@ -254,6 +254,63 @@ if (!cluster.isMaster) {//actual work flow
                 msgHandler.emit('IllegalJSON', connection, JSONmsg, msgType);
                 logger.error("Get change_profile but user not login! request JSON is "+JSON.stringify(JSONmsg));
             }
+        });
+    });
+
+    msgHandler.on('BotMatch', function(connection, JSONmsg, msgType){
+        playerDAO.getPlayerById(JSONmsg.user.user_id, function(player){
+           if(player != null && JSONmsg.user.user_id == connection.id){
+               if(JSONmsg.create_method == 'auto'){
+                   matchDAO.ensureIndex(JSONmsg.game);
+                   matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function(match){
+                      try{
+                          if(match == undefined){
+                              throw "no waiting matches";
+                          }
+                          var push_players = ce.clone(match['players']);
+                          match['players'][match['players'].length] = JSONmsg.user.user_id;
+                          if (match['players'].length == match['max_players']){//if there is enough people here
+                              match['status'] = 'pending';
+                          }
+                          matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
+                              playerDAO.getPlayersById(match.players, function(players){
+                                  //send json back to user
+                                  //TODO: optimize sort function
+                                  var players_sorted=[];
+                                  for(var i=0; i<players.length;i++){
+                                      players_sorted[match.players.indexOf(players[i].user_id)] = players[i];
+                                  }
+                                  var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players_sorted));
+                                  zlib.gzip(JSON2Send, function(err, buffer){
+                                      if(!err){
+                                          connection.sendBytes(buffer);
+                                      }else{
+                                          logger.warn("send "+connection.id+" binary JSON error:"+err);
+                                      }
+                                      logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+
+                                  });
+                                  //DONE:send push to others
+                                  //If you want send push to all players in this game, change receiver from `push_players` to `match['players']`
+                                  var Push2Send = JSONBuilder.join_match_push_builder(match,players);
+                                  process.send({'type':'new_push', 'receiver':push_players, 'json':Push2Send});
+                                  logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSON.stringify(push_players)+", json is "+JSON.stringify(Push2Send));
+                              });
+                          });
+                      }catch(e){
+                            var JSON2Send = JSON.stringify({'msg_id':JSONmsg.msg_id,'type':JSONmsg.type, 'status':'error','msg':'no waiting matches'});
+                            zlib.gzip(JSON2Send, function(err, buffer){
+                               if(!err){
+                                   connection.sendBytes(buffer);
+                               }else{
+                                   logger.warn("send "+connection.id+" binary JSON error:"+err);
+                               }
+                                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+                            });
+                      }
+                   });
+               }
+           }
         });
     });
 
@@ -575,7 +632,7 @@ if (!cluster.isMaster) {//actual work flow
                     }
                 });
             }else{
-                msgHandler.emit("IllegalJSON", connection, JSONmsg, type);
+                msgHandler.emit("IllegalJSON", connection, JSONmsg, msgType);
                 logger.error("Get get_matches but user not login! request JSON is "+JSON.stringify(JSONmsg));
             }
         });
@@ -634,29 +691,37 @@ if (!cluster.isMaster) {//actual work flow
     msgHandler.on('IllegalJSON', function(connection, JSONmsg, msgType){
         if(JSONmsg){
             var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id, "json illegal"));
-            zlib.gzip(JSON2Send, function(err, buffer){
-                if(!err){
-                    connection.sendBytes(buffer);
-                    connection.close();
-                }else{
-                    logger.warn("send "+connection.id+" binary JSON error:"+err);
-                }
-                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+            if(msgType == 'binary'){
+                zlib.gzip(JSON2Send, function(err, buffer){
+                    if(!err){
+                        connection.sendBytes(buffer);
+                        connection.close();
+                    }else{
+                        logger.warn("send "+connection.id+" binary JSON error:"+err);
+                    }
+                    logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-            });
+                });
+            }else{
+                connection.sendUTF(JSON2Send);
+            }
             logger.warn("JSONmsg illegal, json:"+JSON.stringify(JSONmsg)+" , connection from "+connection.remoteAddress);
         }else{
             var JSON2Send = JSON.stringify(JSONBuilder.error_builder());
-            zlib.gzip(JSON2Send, function(err, buffer){
-                if(!err){
-                    connection.sendBytes(buffer);
-                    connection.close();
-                }else{
-                    logger.warn("send "+connection.id+" binary JSON error:"+err);
-                }
-                logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
+            if(msgType == 'binary'){
+                zlib.gzip(JSON2Send, function(err, buffer){
+                    if(!err){
+                        connection.sendBytes(buffer);
+                        connection.close();
+                    }else{
+                        logger.warn("send "+connection.id+" binary JSON error:"+err);
+                    }
+                    logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
 
-            });
+                });
+            }else{
+                connection.sendUTF(JSON2Send);
+            }
         }
     });
 
