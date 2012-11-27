@@ -1,4 +1,5 @@
 
+var mongodb = require("mongodb");
 
 var collectionName = function(game) {
 	return 'matches_' + game;
@@ -7,10 +8,10 @@ var collectionName = function(game) {
 var MatchDAO = function(connection) {
 	this.connection = connection;
 	this.indexStatus = {};
-}
+};
 MatchDAO.prototype.setIndexStatus = function(game){
     this.indexStatus[game] = true;
-}
+};
 MatchDAO.prototype.ensureIndex = function(game) {
     var parent = this;
 	if(this.indexStatus[game] != true) {
@@ -38,17 +39,17 @@ MatchDAO.prototype.ensureIndex = function(game) {
             parent.setIndexStatus(game);
 		});
 	}
-}
+};
 
 
 MatchDAO.prototype.getMatchesByGameAndPlayer = function(game, player, start, num, callback) {
 	// console.log(start + "  " + num);
 	this.connection.query(collectionName(game), function(collection) {
-		collection.find({'players': player}, {'limit': num, 'skip' : start}).toArray(function(err, docs) {
+		collection.find({'players': player}, {'limit': num, 'skip' : start}).sort({'timestamp':-1}).toArray(function(err, docs) {
 			callback(docs);
 		});
 	});
-}
+};
 
 
 MatchDAO.prototype.getMatchById = function(game, id, callback) {
@@ -59,13 +60,18 @@ MatchDAO.prototype.getMatchById = function(game, id, callback) {
 			callback(match);
 		});
 	});
-} 
+};
 
 
 MatchDAO.prototype.createMatch = function(game, match, callback) {
 	if(!(match.status && match.match_id && match.players)) {
 		throw new Error('match fields do not exist');
 	}
+    if(match.timestamp == undefined ){
+        var ts = new Date().getTime();
+        var i = ts % 1000;
+        match.timestamp = new mongodb.BSONPure.Timestamp(i, Math.floor(ts * 0.001));
+    }
 	this.connection.query(collectionName(game), function(collection) {
 		collection.insert(match, {}, function(err, match) {
             if(err){
@@ -74,18 +80,23 @@ MatchDAO.prototype.createMatch = function(game, match, callback) {
 			callback(match);
 		});
 	});
-}
+};
 
 
 MatchDAO.prototype.updateMatch = function(game, match_id, match, callback) {
 	this.connection.query(collectionName(game), function(collection) {
+        if(match.timestamp == undefined ){
+            var ts = new Date().getTime();
+            var i = ts % 1000;
+            match.timestamp = new mongodb.BSONPure.Timestamp(i, Math.floor(ts * 0.001));
+        }
 		collection.update({'match_id': match_id}, match,  {}, function(err) {
 			if(err)
 				throw err;
 			callback();
 		});
 	});
-}
+};
 
 
 MatchDAO.prototype.pickOneWaitingMatch = function(game, playerId, callback) {
@@ -97,7 +108,7 @@ MatchDAO.prototype.pickOneWaitingMatch = function(game, playerId, callback) {
 		});
 	});
 	
-}
+};
 
 
 exports.MatchDAO = MatchDAO;
