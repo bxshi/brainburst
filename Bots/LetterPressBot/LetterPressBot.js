@@ -1,0 +1,328 @@
+/**
+ * Created with JetBrains WebStorm.
+ * User: bxshi
+ * Date: 12-11-28
+ * Time: PM12:57
+ * To change this template use File | Settings | File Templates.
+ */
+
+
+var Bots = require("./BotConfig.js").BotConfigs;
+
+
+var async = require("async");
+var cluster = require('cluster');
+
+if(cluster.isMaster){
+    for(var i = 0; i< Bots.length; i++) {
+        cluster.fork({'id':i});
+    }
+}else{
+    var wsCreator = require("../../libs4test/client.js");
+    var logger = require("../../libs/logger.js");
+    var zlib = require("zlib");
+    var ce = require("cloneextend");
+    var jsonBuilder = require("../../libs4test/clientJSONBuilder.js");
+    var messageHandler = require("../libs/ClientMessageHandler.js");
+    var msgHandler = new messageHandler();
+
+    var mongo = require('../../libs/MongoDBConnection.js');
+    var mongoClient = new mongo.MongoDBConnection({
+        host : '127.0.0.1',
+        port : 27017,
+        db : 'letter_press_bot',
+        options : {
+            auto_reconnect : true
+        }
+    });
+
+    var bot = require("../libs/BotDAO.js");
+    var botDAO = new bot.BotDAO(mongoClient);
+
+    var conn2Bot = {};
+
+    Bots[process.env.id].client = wsCreator('ws://125.39.25.101', 9876, "brain_burst");
+    Bots[process.env.id].client.on('connect', function(connection){
+        conn2Bot[connection] = Bots[process.env.id];
+        logger.info("Bot "+Bots[process.env.id].nickname+" invaded into game server!");
+        var JSON2Send = JSON.stringify(jsonBuilder.user_login_builder(null,{'nickname':Bots[process.env.id].nickname}));
+        sendData(connection, JSON2Send);
+        connection.on('message', function(message){
+            logger.info("Bot "+Bots[process.env.id].nickname+" got a message");
+            unzipData(connection, message.binaryData);
+        });
+    });
+
+    /*
+     * send data via websocket (with gzip compression)
+     */
+    var sendData = function(connection, data){
+        logger.warn("send json:"+data);
+        zlib.gzip(data, function(err, buffer){
+            if(!err){
+                connection.sendBytes(buffer);
+            }
+        });
+    };
+
+    var unzipData = function(connection, data){
+        zlib.unzip(data, function(err,buffer){
+            if(!err){
+                msgHandler.route(connection, buffer);
+            }
+        });
+    };
+
+    var gameValidation = function(user, JSONmsg){
+        var game_started = false;
+        var game_ended = true;
+
+        if(JSONmsg.status == 'error'){
+            logger.warn(JSONmsg.msg);
+            return false;
+        }
+
+        if(JSONmsg.match.from_opponent && JSONmsg.match.from_opponent == user.user_id){
+            return false;
+        }
+
+        for(var i = 0; i< JSONmsg.match.match_data.letter_stats.length;i++){
+            if(JSONmsg.match.match_data.letter_stats[i]==0){
+                game_ended = false;
+            }else{
+                game_started = true;
+            }
+        }
+
+        if(!game_started || game_ended){
+            return false;
+        }else{
+            return true;
+        }
+
+    };
+
+    var orgMatchData = function(JSONmsg){
+        var organizedData = {
+            'match_id' : JSONmsg.match.match_id,
+            'letters' : JSONmsg.match.match_data.letters,
+            'letter_stats' : JSONmsg.match.match_data.letter_stats,
+            'played_words' : JSONmsg.match.match_data.played_words
+        };
+
+        organizedData.letterOwner = {};
+        organizedData.letterPos = {};
+
+        for(var i =0; i<organizedData.letters.length;i++){
+            if(!organizedData.letterOwner[organizedData.letters[i]]){
+                organizedData.letterOwner[organizedData.letters[i]] = [];
+                organizedData.letterPos[organizedData.letters[i]] = [];
+            }
+            organizedData.letterOwner[organizedData.letters[i]][organizedData.letterOwner[organizedData.letters[i]].length] = organizedData.letter_stats[i];
+            organizedData.letterPos[organizedData.letters[i]][organizedData.letterPos[organizedData.letters[i]].length] = i;
+        }
+
+        organizedData.lettersForNewWords = "";
+
+        return organizedData;
+
+    };
+
+    var getLetters = function(priority,organizedData){
+
+        for(var i=0;i<organizedData.letters.length;i++){
+            if(organizedData.letter_stats[i] >0 && organizedData.letter_stats[i]<3){
+                //opponents' tile
+                if(priority == 'opponent' || Math.random() < 0.4){
+                    organizedData.lettersForNewWords+=organizedData.letters[i];
+                }
+            }else if(organizedData.letter_stats[i] == 0){
+                //empty' tile
+                if(priority == 'empty' || Math.random() < 0.8){
+                    organizedData.lettersForNewWords+=organizedData.letters[i];
+                }
+            }else{
+                //my own tile
+                if(Math.random() < 0.3){
+                    organizedData.lettersForNewWords+=organizedData.letters[i];
+                }
+            }
+        }
+
+        return organizedData;
+
+    };
+
+    var constructJSON = function(user, organizedData){
+        return JSON2Send = {
+            'msg_id' : 0,
+            'type' : "submit_match",
+            'user' : user,
+            'game' : 'letterpress',
+            'match' : {
+                'match_id' : organizedData.match_id,
+                'match_data' : {
+                    'letters' : organizedData.letters,
+                    'letter_stats' : organizedData.letter_stats,
+                    'played_words' : organizedData.played_words,
+                    'last_player' : user.user_id
+                }
+            }
+        }
+    };
+
+    var findWord = function(connection, priority, user, played_words, organizedData, max_len, min_len){
+        logger.error("lettersForNewWords :"+organizedData.lettersForNewWords);
+        botDAO.findWord('lp', organizedData.lettersForNewWords.toLowerCase(), max_len, min_len, function(words){
+
+            if(words.length == 0){
+                //no words here
+                //pass this turn
+                if(!organizedData.played_words[user.user_id]){
+                    organizedData.played_words[user.user_id] = [];
+                }
+
+                organizedData.played_words[user.user_id][organizedData.played_words[user.user_id].length] = {
+                    'word' : "",
+                    'index' : []
+                };
+
+                sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
+            }else{
+                var dup = true;
+                var tried = 0;
+                while (dup){
+                    var word = words[Math.round(Math.random() * (words.length-1))]['word'].toUpperCase();
+                    if (played_words.indexOf(word) == -1){
+                        dup = false;
+                    }
+                    tried++;
+                    if(tried > words.length){
+                        //pass this turn
+                        if(!organizedData.played_words[user.user_id]){
+                            organizedData.played_words[user.user_id] = [];
+                        }
+
+                        organizedData.played_words[user_id][organizedData.played_words[user_id].length] = {
+                            'word' : "",
+                            'index' : []
+                        };
+
+                        sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
+
+                    }
+                }
+
+                logger.error("choose word:"+word);
+
+                var tileOrder = [];
+                switch(priority){
+                    case 'opponent':
+                        tileOrder = [1,2,0,3,4];
+                        break;
+                    case 'empty':
+                        tileOrder = [0,1,2,3,4];
+                        break;
+                    default:
+                        tileOrder = [0,1,2,3,4];
+                        break;
+                }
+
+                for(var i = 0; i< word.length;i++){
+                    var pos = -1;
+                    var j = 0;
+                    while(pos == -1 && j < 5){
+                        pos = organizedData.letterOwner[word[i]].indexOf(tileOrder[j++]);
+                    }
+
+                    var delpos = pos;
+
+                    pos = organizedData.letterPos[word[i]][pos];
+                    organizedData.letterPos[word[i]].splice(delpos,1);
+                    organizedData.letterOwner[word[i]].splice(delpos,1);
+
+                    organizedData.letter_stats[pos] = 3;
+                    if(!organizedData.word_pos){
+                        organizedData.word_pos = [];
+                    }
+                    organizedData.word_pos[i] = pos;
+                }
+
+                if(!organizedData.played_words[user.user_id]){
+                    organizedData.played_words[user.user_id] = [];
+                }
+
+                organizedData.played_words[user.user_id][organizedData.played_words[user.user_id].length] = {
+                    'word' : word,
+                    'index' : organizedData.word_pos
+                };
+
+                sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
+
+            }
+        });
+    };
+
+
+
+    var submit_match_logic = function(connection, JSONmsg){
+
+        logger.info(JSON.stringify(JSONmsg));
+        //check if it is bot's turn
+        if(!gameValidation(conn2Bot[connection].user, JSONmsg)){
+            return;
+        }
+
+        if(!conn2Bot[connection].matches){
+            conn2Bot[connection].matches = {};
+        }
+
+        //save played words
+        conn2Bot[connection].matches[JSONmsg.match.match_id] = ce.clone(JSONmsg.match.match_data.played_words);
+
+        //find out which word to play
+
+        //step1. reorganize data
+
+        var reorganizedData = getLetters(conn2Bot[connection].priority,orgMatchData(JSONmsg));
+
+        //step2. find word and send it back
+
+        var playedWords = [];
+
+        for(var i = 0; i < JSONmsg.match.match_data.played_words[JSONmsg.match.players[0].user_id].length; i++){
+            playedWords[playedWords.length] = JSONmsg.match.match_data.played_words[JSONmsg.match.players[0].user_id][i]['word'];
+        }
+        if(JSONmsg.match.match_data.played_words[JSONmsg.match.players[1].user_id]){
+            for(var i = 0; i < JSONmsg.match.match_data.played_words[JSONmsg.match.players[1].user_id].length; i++){
+                playedWords[playedWords.length] = JSONmsg.match.match_data.played_words[JSONmsg.match.players[1].user_id][i]['word'];
+            }
+        }
+
+        findWord(connection, conn2Bot[connection].priority,conn2Bot[connection].user, playedWords, reorganizedData, conn2Bot[connection]['max_len'],conn2Bot[connection]['min_len']);
+
+    };
+
+    var submit_match_logic_wrapper = function(connection, JSONmsg){
+        setTimeout(submit_match_logic, conn2Bot[connection].response_interval, connection, JSONmsg);
+    };
+
+    msgHandler.on('UserLogin', function(connection, JSONmsg){
+        console.log("bot "+JSONmsg.user.user_data.nickname+" logged in");
+        conn2Bot[connection].user = ce.clone(JSONmsg.user);
+
+        //after login, try get matches by interval
+
+        setInterval(function(connection){
+            logger.warn(conn2Bot[connection].nickname+" try check game");
+            var JSON2Send = JSON.stringify(jsonBuilder.bot_match_builder(0, 'letterpress', conn2Bot[connection].user));
+            sendData(connection, JSON2Send);
+        }, conn2Bot[connection]['check_interval'], connection);
+
+    });
+
+    msgHandler.on('BotMatch', submit_match_logic_wrapper);
+
+    msgHandler.on('UpdateMatch', submit_match_logic_wrapper);
+}
+
