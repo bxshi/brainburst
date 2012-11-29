@@ -29,6 +29,11 @@ module.exports = {
         return JSONObj;
     },
     user_login_error_builder : function(){},
+    bot_match_builder : function(msg_id,game, user){
+        var JSONObj = {'msg_id':msg_id, 'type':"bot_match", 'game':game,'max_players':2, 'create_method':"auto"};
+        JSONObj.user = user;
+        return JSONObj;
+    },
     create_match_builder : function(create_method,user,match,opponent){
         var JSONObj = {'msg_id': 2, 'type':"create_match",'game':"test_game",'max_players':2};
         if(create_method){
