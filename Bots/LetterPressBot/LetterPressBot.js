@@ -258,7 +258,10 @@ if(cluster.isMaster){
                     organizedData.letterPos[word[i]].splice(delpos,1);
                     organizedData.letterOwner[word[i]].splice(delpos,1);
 
-                    organizedData.letter_stats[pos] = 3;
+                    if(organizedData.letter_stats[pos] != 2){//if it is unchangeable, ignore it
+                        organizedData.letter_stats[pos] = 3;
+                    }
+
                     if(!organizedData.word_pos){
                         organizedData.word_pos = [];
                     }
@@ -318,23 +321,29 @@ if(cluster.isMaster){
 
         //step3. check non-occupied word, if only one, must included it.
         var ncpCount =0;
+        var botCount = 0;
+        var opponentCount = 0;
         var ncpPos = 0;
         for(var i = 0; i< reorganizedData.letter_stats.length;i++){
             if(reorganizedData.letter_stats[i] == 0){
                 ncpCount++;
                 ncpPos = i;
+            }else if (reorganizedData.letter_stats[i] > 0 && reorganizedData.letter_stats[i]<3){
+                opponentCount++;
+            }else{
+                botCount++;
             }
         }
 
         var mustIncludeWord = "";
 
-        if(ncpCount == 1){
+        if(ncpCount == 1 && opponentCount <= botCount){//bot may win, so just finish the game!
             mustIncludeWord += reorganizedData.letters[ncpPos];
-        }else if(conn2Bot[connection].priority == 'empty'){
+        }else if(conn2Bot[connection].priority == 'empty'){//may not win, so still follow the priority setting(this will lose:<)
             mustIncludeWord += reorganizedData.letters[ncpPos];
         }else{
-            for(var i = 0; i< reorganizedData.letter_stats.length;i++){
-                if(reorganizedData.letter_stats[i] > 0 && reorganizedData.letter_stats[i] < 3){
+            for(var i = 0; i< reorganizedData.letter_stats.length;i++){//just like the previous one, but this may win :)
+                if(reorganizedData.letter_stats[i] > 0 && reorganizedData.letter_stats[i] < 2){
                     mustIncludeWord += reorganizedData.letters[i];
                     break;
                 }
