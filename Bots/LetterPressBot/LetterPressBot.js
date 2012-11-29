@@ -86,12 +86,18 @@ if(cluster.isMaster){
             return false;
         }
 
+
+
         for(var i = 0; i< JSONmsg.match.match_data.letter_stats.length;i++){
             if(JSONmsg.match.match_data.letter_stats[i]==0){
                 game_ended = false;
             }else{
                 game_started = true;
             }
+        }
+
+        if(JSONmsg.type == 'update_match' && JSONmsg.match.from_opponent != user.user_id && !game_ended){
+            return true;
         }
 
         if(!game_started || game_ended){
@@ -171,23 +177,34 @@ if(cluster.isMaster){
         }
     };
 
-    var findWord = function(connection, priority, user, played_words, organizedData, max_len, min_len){
+    var findWord = function(connection, priority, user, played_words, organizedData,mustIncludeWord, max_len, min_len){
         logger.error("lettersForNewWords :"+organizedData.lettersForNewWords);
-        botDAO.findWord('lp', organizedData.lettersForNewWords.toLowerCase(), max_len, min_len, function(words){
+        botDAO.findWord('lp', organizedData.lettersForNewWords.toLowerCase(), mustIncludeWord.toLowerCase(), max_len, min_len, function(words){
 
             if(words.length == 0){
                 //no words here
-                //pass this turn
-                if(!organizedData.played_words[user.user_id]){
-                    organizedData.played_words[user.user_id] = [];
+
+                if(max_len == 25 && min_len == 0 && organizedData.lettersForNewWords.length == 25 && mustIncludeWord == ""){
+                    //pass this turn
+                    if(!organizedData.played_words[user.user_id]){
+                        organizedData.played_words[user.user_id] = [];
+                    }
+
+                    organizedData.played_words[user.user_id][organizedData.played_words[user.user_id].length] = {
+                        'word' : "",
+                        'index' : []
+                    };
+
+                    sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
+                }else if(mustIncludeWord!="" && organizedData.lettersForNewWords.length < 25){ // not get full of this
+                    logger.warn("not find any words with a must have character "+mustIncludeWord+", try got words with more characters");
+                    organizedData.lettersForNewWords = organizedData.letters;
+                    findWord(connection, priority, user, played_words, organizedData, mustIncludeWord.toLowerCase(), 25,0);
+                }else{
+                    logger.warn("not find any words, try got any word that does not used.");
+                    organizedData.lettersForNewWords = organizedData.letters;
+                    findWord(connection, priority, user, played_words, organizedData, "", 25,0);
                 }
-
-                organizedData.played_words[user.user_id][organizedData.played_words[user.user_id].length] = {
-                    'word' : "",
-                    'index' : []
-                };
-
-                sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
             }else{
                 var dup = true;
                 var tried = 0;
@@ -286,7 +303,7 @@ if(cluster.isMaster){
 
         var reorganizedData = getLetters(conn2Bot[connection].priority,orgMatchData(JSONmsg));
 
-        //step2. find word and send it back
+        //step2. find word
 
         var playedWords = [];
 
@@ -299,12 +316,37 @@ if(cluster.isMaster){
             }
         }
 
-        findWord(connection, conn2Bot[connection].priority,conn2Bot[connection].user, playedWords, reorganizedData, conn2Bot[connection]['max_len'],conn2Bot[connection]['min_len']);
+        //step3. check non-occupied word, if only one, must included it.
+        var ncpCount =0;
+        var ncpPos = 0;
+        for(var i = 0; i< reorganizedData.letter_stats.length;i++){
+            if(reorganizedData.letter_stats[i] == 0){
+                ncpCount++;
+                ncpPos = i;
+            }
+        }
+
+        var mustIncludeWord = "";
+
+        if(ncpCount == 1){
+            mustIncludeWord += reorganizedData.letters[ncpPos];
+        }else if(conn2Bot[connection].priority == 'empty'){
+            mustIncludeWord += reorganizedData.letters[ncpPos];
+        }else{
+            for(var i = 0; i< reorganizedData.letter_stats.length;i++){
+                if(reorganizedData.letter_stats[i] > 0 && reorganizedData.letter_stats[i] < 3){
+                    mustIncludeWord += reorganizedData.letters[i];
+                    break;
+                }
+            }
+        }
+
+        findWord(connection, conn2Bot[connection].priority,conn2Bot[connection].user, playedWords, reorganizedData, mustIncludeWord.toLowerCase(), conn2Bot[connection]['max_len'],conn2Bot[connection]['min_len']);
 
     };
 
     var submit_match_logic_wrapper = function(connection, JSONmsg){
-        setTimeout(submit_match_logic, conn2Bot[connection].response_interval, connection, JSONmsg);
+        setTimeout(submit_match_logic, Math.round(Math.random() * 100000)%(conn2Bot[connection].response_interval), connection, JSONmsg);
     };
 
     msgHandler.on('UserLogin', function(connection, JSONmsg){
@@ -318,7 +360,6 @@ if(cluster.isMaster){
             var JSON2Send = JSON.stringify(jsonBuilder.bot_match_builder(0, 'letterpress', conn2Bot[connection].user));
             sendData(connection, JSON2Send);
         }, conn2Bot[connection]['check_interval'], connection);
-
     });
 
     msgHandler.on('BotMatch', submit_match_logic_wrapper);

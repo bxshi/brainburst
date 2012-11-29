@@ -14,16 +14,25 @@ var BotConfigs = [
         'min_len' : 4,
         "priority" : "opponent",
         'check_interval' : 15000,
-        'response_interval' : 5000
+        'response_interval' : 15000
     },
     {
         'uuid':"BOT_002",
         'nickname':"Alex",
         'max_len' : 8,
         'min_len' : 2,
-        "priority" : "opponent",
+        "priority" : "empty",
         'check_interval' : 7000,
-        'response_interval' : 8000
+        'response_interval' : 18000
+    },
+    {
+        'uuid':"BOT_003",
+        'nickname':"熊本一郎",
+        'max_len' : 25,
+        'min_len' : 10,
+        'priority' : "empty",
+        'check_interval' : 11000,
+        'response_interval' : 12000
     }
 ];
 

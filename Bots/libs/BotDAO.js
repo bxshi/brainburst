@@ -24,7 +24,7 @@ BotDAO.prototype.ensureIndex = function(game) {
     });
 };
 
-BotDAO.prototype.findWord = function(game, str, max_len, min_len, callback){
+BotDAO.prototype.findWord = function(game, str, mustStr, max_len, min_len, callback){
     var queryJSON = {};
 
     for(var j='a'.charCodeAt(0);j<='z'.charCodeAt(0);j++){
@@ -35,10 +35,16 @@ BotDAO.prototype.findWord = function(game, str, max_len, min_len, callback){
             queryJSON[str[i]]['$lte']++;
     }
 
+    if(mustStr != ""){
+        for(var i=0;i<mustStr.length;i++){
+            queryJSON[mustStr[i]] = 1;
+        }
+    }
+
     queryJSON['length'] = {'$gt':min_len, '$lt':max_len};
 
     this.connection.query(collectionName(game), function(collection){
-       collection.find(queryJSON, {'word' : 1, 'limit':100}).sort({'length':-1}).toArray(function(err, docs){
+       collection.find(queryJSON, {'word' : 1}).sort({'length':-1}).toArray(function(err, docs){
           callback(docs);
        });
     });
