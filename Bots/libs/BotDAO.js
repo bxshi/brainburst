@@ -32,16 +32,13 @@ BotDAO.prototype.findWord = function(game, str, max_len, min_len, callback){
     }
 
     for(var i=0; i<str.length;i++){
-        console.log(str[i]);
             queryJSON[str[i]]['$lte']++;
     }
 
     queryJSON['length'] = {'$gt':min_len, '$lt':max_len};
 
-    console.log("str is"+JSON.stringify(queryJSON));
-
     this.connection.query(collectionName(game), function(collection){
-       collection.find(queryJSON, {'word' : 1}).sort({'length':-1}).toArray(function(err, docs){
+       collection.find(queryJSON, {'word' : 1, 'limit':100}).sort({'length':-1}).toArray(function(err, docs){
           callback(docs);
        });
     });
