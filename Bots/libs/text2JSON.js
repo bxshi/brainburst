@@ -18,7 +18,7 @@ var mongoClient = new mongo.MongoDBConnection({
     }
 });
 
-var bot = require("./BotDAO.js");
+var bot = require("./../../libs/BotDAO.js");
 var botDAO = new bot.BotDAO(mongoClient);
 //botDAO.ensureIndex('lp');
 fs.readFile('../dicts/wordDict.txt', 'utf8', function(err, data){

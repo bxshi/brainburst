@@ -12,7 +12,7 @@ var PlayerDAO = function(connection) {
             }
         });
     });
-}
+};
 
 PlayerDAO.prototype.getPlayerById = function(id, cb) {
     this.connection.query(collectionName, function(collection){
@@ -21,7 +21,7 @@ PlayerDAO.prototype.getPlayerById = function(id, cb) {
             cb(player);
         });
     });
-}
+};
 
 PlayerDAO.prototype.getPlayersById = function(id_list, cb) {
     this.connection.query(collectionName, function(collection){
@@ -35,7 +35,7 @@ PlayerDAO.prototype.getPlayersById = function(id_list, cb) {
             cb(players);
         });
     });
-}
+};
 
 PlayerDAO.prototype.getPlayersByIdList = function(id_list, cb) {
     var players_list = [];
@@ -56,7 +56,7 @@ PlayerDAO.prototype.getPlayersByIdList = function(id_list, cb) {
         });
     });
     });
-}
+};
 
 PlayerDAO.prototype.updatePlayer = function(id,data,cb) {
     this.connection.query(collectionName, function(collection){
@@ -67,7 +67,7 @@ PlayerDAO.prototype.updatePlayer = function(id,data,cb) {
             cb();
         });
     });
-}
+};
 
 PlayerDAO.prototype.createPlayer = function(player, cb) {
     if(player.user_id == null)
@@ -78,6 +78,14 @@ PlayerDAO.prototype.createPlayer = function(player, cb) {
             cb();
         });
     });
-}
+};
+
+PlayerDAO.prototype.playersCount = function(cb) {
+    this.connection.query(collectionName, function(collection){
+       collection.find().count(function(e, count){
+          cb(count);
+       });
+    });
+};
 
 exports.PlayerDAO = PlayerDAO;

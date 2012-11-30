@@ -9,8 +9,6 @@
 
 var Bots = require("./BotConfig.js").BotConfigs;
 
-
-var async = require("async");
 var cluster = require('cluster');
 
 if(cluster.isMaster){
@@ -23,7 +21,7 @@ if(cluster.isMaster){
     var zlib = require("zlib");
     var ce = require("cloneextend");
     var jsonBuilder = require("../../libs4test/clientJSONBuilder.js");
-    var messageHandler = require("../libs/ClientMessageHandler.js");
+    var messageHandler = require("../../libs/ClientMessageHandler.js");
     var msgHandler = new messageHandler();
 
     var mongo = require('../../libs/MongoDBConnection.js');
@@ -36,7 +34,7 @@ if(cluster.isMaster){
         }
     });
 
-    var bot = require("../libs/BotDAO.js");
+    var bot = require("../../libs/BotDAO.js");
     var botDAO = new bot.BotDAO(mongoClient);
 
     var conn2Bot = {};
@@ -282,8 +280,6 @@ if(cluster.isMaster){
             }
         });
     };
-
-
 
     var submit_match_logic = function(connection, JSONmsg){
 

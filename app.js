@@ -32,12 +32,12 @@ if (!cluster.isMaster) {//actual work flow
     connection_pool.selectDB();
     var mongo = require('./libs/MongoDBConnection.js');
     var mongoClient = new mongo.MongoDBConnection(conf.mongo);
-    var player = require('./libs/PlayerDAO.js');
-    var match = require('./libs/MatchDAO.js');
     var JSONBuilder = require('./libs/JSONBuilder.js');
     var messageHandler = require('./libs/MessageHandler.js');
     var msgHandler = new messageHandler();
     var sendData = require('./libs/common.js').sendData;
+    var player = require('./libs/PlayerDAO.js');
+    var match = require('./libs/MatchDAO.js');
 
     // DAOs
     var matchDAO = new match.MatchDAO(mongoClient);
@@ -699,5 +699,67 @@ if (!cluster.isMaster) {//actual work flow
         workers[newWorker.process.pid] = newWorker;
     });
 
+    //Monitor stuff
+
+    // curl -u xinmei:brainburst url:8808
+
+    var Monitorhttp = require("http");
+    var Monitorurl = require("url");
+
+    var mongo = require('./libs/MongoDBConnection.js');
+    var mongoClient = new mongo.MongoDBConnection(conf.mongo);
+
+    var player = require('./libs/PlayerDAO.js');
+    var match = require('./libs/MatchDAO.js');
+
+    // DAOs
+    var matchDAO = new match.MatchDAO(mongoClient);
+    var playerDAO = new player.PlayerDAO(mongoClient);
+
+    Monitorhttp.createServer(function(req, res){
+       var header = req.headers['authorization']||'';
+       var token = header.split(/\s+/).pop()||'';
+       var auth = new Buffer(token, 'base64').toString();
+       var up = auth.split(/:/);
+       if(up[0] != 'xinmei' || up[1] != 'brainburst'){
+           res.writeHead(404);
+           res.end();
+           console.log("some one try to get status without auth");
+       }else{
+           switch(Monitorurl.parse(req.url).path){
+               case "/":
+                   res.writeHead(200, {'Content-Type': 'text/plain'});
+                   res.end(JSON.stringify(MonitorStatus));
+                   break;
+               default:
+                   res.writeHead(404);
+                   res.end();
+           }
+       }
+    }).listen(8808);
+
+    var MonitorStatus = {
+        'onlinePlayers': 0,
+        'totalPlayers' : 0,
+        'playersWithUnSendPush': 0,
+        'totalMatches' : 0
+    };
+
+    var getStatus = function(){
+        redisConnectionPoolClient.getOnline("", function(docs){
+            MonitorStatus.onlinePlayers = docs.length;
+        });
+        playerDAO.playersCount(function(count){
+            MonitorStatus.totalPlayers = count;
+        });
+        queue.getPlayers(function(players){
+           MonitorStatus.playersWithUnSendPush = players.length;
+        });
+        matchDAO.matchesCount("letterpress",function(count){
+           MonitorStatus.totalMatches = count;
+        });
+    };
+
+    setInterval(getStatus, 60000);
 
 }

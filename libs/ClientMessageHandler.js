@@ -24,6 +24,7 @@ ClientMessageHandler.prototype.route = function(connection, JSONstr){
         this.emit('NotJSON', connection, JSONstr);
     }
 
+    console.dir(JSONmsg);
     if(JSONmsg.msg_id == -1){// this is a push
 
         switch(JSONmsg.type){
@@ -50,6 +51,15 @@ ClientMessageHandler.prototype.route = function(connection, JSONstr){
             case 'bot_match':
             case 'create_match':
                 this.emit('BotMatch', connection, JSONmsg);
+                break;
+            case 'change_profile':
+                this.emit('ChangeProfile', connection, JSONmsg);
+                break;
+            case 'get_matches':
+                this.emit('GetMatches', connection, JSONmsg);
+                break;
+            case 'online_players':
+                this.emit('OnlinePlayers', connection, JSONmsg);
                 break;
         }
     }

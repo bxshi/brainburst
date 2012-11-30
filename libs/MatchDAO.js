@@ -110,5 +110,12 @@ MatchDAO.prototype.pickOneWaitingMatch = function(game, playerId, callback) {
 	
 };
 
+MatchDAO.prototype.matchesCount = function(game,cb) {
+    this.connection.query(collectionName(game), function(collection){
+        collection.find().count(function(e, count){
+            cb(count);
+        });
+    });
+};
 
 exports.MatchDAO = MatchDAO;
