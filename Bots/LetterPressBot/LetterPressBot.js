@@ -45,7 +45,7 @@ if(cluster.isMaster){
     Bots[process.env.id].client.on('connect', function(connection){
         conn2Bot[connection] = Bots[process.env.id];
         logger.info("Bot "+Bots[process.env.id].nickname+" invaded into game server!");
-        var JSON2Send = JSON.stringify(jsonBuilder.user_login_builder(null,{'nickname':Bots[process.env.id].nickname}));
+        var JSON2Send = JSON.stringify(jsonBuilder.user_login_builder(Bots[process.env.id].uuid,null));
         sendData(connection, JSON2Send);
         connection.on('message', function(message){
             logger.info("Bot "+Bots[process.env.id].nickname+" got a message");
