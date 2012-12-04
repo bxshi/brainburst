@@ -251,7 +251,7 @@ if (!cluster.isMaster) {//actual work flow
                                   sendData(connection, JSON2Send);
                                   //DONE:send push to others
                                   //If you want send push to all players in this game, change receiver from `push_players` to `match['players']`
-                                  var Push2Send = JSONBuilder.join_match_push_builder(match,players);
+                                  var Push2Send = JSONBuilder.join_match_push_builder(match,players_sorted);
                                   process.send({'type':'new_push', 'receiver':push_players, 'json':Push2Send});
                                   logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSON.stringify(push_players)+", json is "+JSON.stringify(Push2Send));
                               });
@@ -301,7 +301,7 @@ if (!cluster.isMaster) {//actual work flow
                                     sendData(connection, JSON2Send);
                                     //DONE:send push to others
                                     //If you want send push to all players in this game, change receiver from `push_players` to `match['players']`
-                                    var Push2Send = JSONBuilder.join_match_push_builder(match,players);
+                                    var Push2Send = JSONBuilder.join_match_push_builder(match,players_sorted);
                                     process.send({'type':'new_push', 'receiver':push_players, 'json':Push2Send});
                                     logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSON.stringify(push_players)+", json is "+JSON.stringify(Push2Send));
                                 });
