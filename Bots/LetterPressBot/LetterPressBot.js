@@ -23,6 +23,8 @@ if(cluster.isMaster){
         workers[workers.indexOf(worker.process.pid)] = cluster.fork({'id':workers.indexOf(worker.process.pid)});
     });
 
+
+
 }else{
     var wsCreator = require("../../libs4test/client.js");
     var logger = require("../../libs/logger.js");
@@ -217,7 +219,10 @@ if(cluster.isMaster){
                 while (dup){
                     var word = words[Math.round(Math.random() * (words.length-1))]['word'].toUpperCase();
                     if (played_words.indexOf(word) == -1){
-                        dup = false;
+                        var played_words_string = JSON.stringify(played_words);
+                        if(played_words_string.indexOf(word) == -1){
+                            dup = false;
+                        }
                     }
                     tried++;
                     if(tried > words.length){
@@ -378,5 +383,8 @@ if(cluster.isMaster){
     msgHandler.on('BotMatch', submit_match_logic_wrapper);
 
     msgHandler.on('UpdateMatch', submit_match_logic_wrapper);
-}
 
+    msgHandler.on('GetMatches', function(connection, JSONmsg){
+        //when login, firstly deal with this.
+    });
+}
