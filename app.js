@@ -45,31 +45,31 @@ if (!cluster.isMaster) {//actual work flow
 
 
 
-    var options = {
-        key: fs.readFileSync('./ssl/server.key'),
-        passphrase: 'BrainBurst',
-        cert: fs.readFileSync('./ssl/server.crt')
-    };
+//    var options = {
+//        key: fs.readFileSync('./ssl/server.key'),
+//        passphrase: 'BrainBurst',
+//        cert: fs.readFileSync('./ssl/server.crt')
+//    };
 
-    var httpsServer = https.createServer(options, function (req, res) {
-        logger.warn("Received http request for " + req.url + " that maybe an attack?");
-        res.writeHead(404);
-        res.end();
-    });
-
-
-//    var server = http.createServer(function (request, response) {
-//        logger.warn("Received http request for " + request.url + " that maybe an attack?");
-//        response.writeHead(404);
-//        response.end();
+//    var httpsServer = https.createServer(options, function (req, res) {
+//        logger.warn("Received http request for " + req.url + " that maybe an attack?");
+//        res.writeHead(404);
+//        res.end();
 //    });
 
-    httpsServer.listen(conf.WebSocketPort, function () {
+
+    var server = http.createServer(function (request, response) {
+        logger.warn("Received http request for " + request.url + " that maybe an attack?");
+        response.writeHead(404);
+        response.end();
+    });
+
+    server.listen(conf.WebSocketPort, function () {
         logger.info('Server started, listening on port' + conf.WebSocketPort);
     });
 
     wsServer = new WebSocketServer({
-        httpServer:httpsServer,
+        httpServer:server,
 
         //long-connection settings
         keepalive:true,

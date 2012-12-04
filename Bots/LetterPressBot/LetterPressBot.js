@@ -12,9 +12,17 @@ var Bots = require("./BotConfig.js").BotConfigs;
 var cluster = require('cluster');
 
 if(cluster.isMaster){
+    var workers = [];
+
     for(var i = 0; i< Bots.length; i++) {
-        cluster.fork({'id':i});
+        workers[i] = cluster.fork({'id':i});
     }
+
+    //restart bot
+    cluster.on('exit', function (worker, code, signal) {
+        workers[workers.indexOf(worker.process.pid)] = cluster.fork({'id':workers.indexOf(worker.process.pid)});
+    });
+
 }else{
     var wsCreator = require("../../libs4test/client.js");
     var logger = require("../../libs/logger.js");
@@ -182,7 +190,7 @@ if(cluster.isMaster){
             if(words.length == 0){
                 //no words here
 
-                if(max_len == 25 && min_len == 0 && organizedData.lettersForNewWords.length == 25 && mustIncludeWord == ""){
+                if(max_len >= 25 && min_len == 0 && organizedData.lettersForNewWords.length == 25 && mustIncludeWord == ""){
                     //pass this turn
                     if(!organizedData.played_words[user.user_id]){
                         organizedData.played_words[user.user_id] = [];
@@ -224,7 +232,7 @@ if(cluster.isMaster){
                         };
 
                         sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
-
+                        return;
                     }
                 }
 
