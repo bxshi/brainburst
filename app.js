@@ -576,7 +576,6 @@ if (!cluster.isMaster) {//actual work flow
                             if(!err){
                                 logger.debug("push send to "+message.receiver[id]+" ok");
                                 connections[message.receiver[id]].sendBytes(buffer);
-                                connections[message.receiver[id]].close();
                             }else{
                                 logger.debug("push send status"+err);
                             }
@@ -656,6 +655,7 @@ if (!cluster.isMaster) {//actual work flow
                         //TODO: does this foreach function series or async? If not series, it will cause push order problems.
                         for (var i in message.receiver){
                             queue.each(message.receiver[i],function(json){
+                                logger.error(JSON.parse(json));
                                 cluster.workers[id].send({type:"send_push",'receiver':[message.receiver[i]],'json':JSON.parse(json)});
                             });
                         }
