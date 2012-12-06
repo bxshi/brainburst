@@ -550,6 +550,18 @@ if (!cluster.isMaster) {//actual work flow
 
     });
 
+    var checkPushStatus = function(push_id){
+      if(pushStatusPool[push_id]){//exists this push
+          if(pushStatusPool[push_id].status != 'ok'){// does not get response
+              console.error("push response timeout!");
+              delete pushStatusPool[push_id]; // restore push, and remove this.
+              process.send({'type':"restore_push", 'receiver':pushStatusPool[push_id].connection, 'json':pushStatusPool[push_id].json});
+          }
+      }
+    };
+
+    //check status of push
+
     //workers' push sending logic
     process.on('message', function(message){
         if(message.type=='send_push') {
@@ -557,12 +569,17 @@ if (!cluster.isMaster) {//actual work flow
             for(var id in message.receiver){
                 if(connections[message.receiver[id]]!=undefined) {
                     //what if the connection is dropped just after this ?
-//                    if(message.json.msg_id == -1){
-//                        if(message.json.push_id == ""){
-//                            message.json.push_id = uuidGenerator();
-//                        }
-//                        pushStatusPool[message.json.push_id] = {'connection':message.receiver[id], 'json':message.json, 'status':'error'};
-//                    }
+
+
+                    //check if it is a push, save it into push pool, set default status is error
+                    if(message.json.msg_id == -1){
+                        if(message.json.push_id == ""){
+                            message.json.push_id = uuidGenerator();
+                        }
+                        pushStatusPool[message.json.push_id] = {'connection':message.receiver[id], 'json':message.json, 'status':'error'};
+                        setTimeout(checkPushStatus, 3000, message.json.push_id);
+                    }
+
                     zlib.gzip(JSON.stringify(message.json), function(err, buffer){
                         try{
                             if(!err){
@@ -571,6 +588,7 @@ if (!cluster.isMaster) {//actual work flow
                                     if(err){
                                         logger.debug("send push error, error code is "+err);
                                         process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
+                                        delete pushStatusPool[message.receiver[id]];
                                     }
                                 });
                             }else{
@@ -580,6 +598,7 @@ if (!cluster.isMaster) {//actual work flow
                         }catch(e){
                             logger.debug(e);
                             logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
+                            delete pushStatusPool[message.receiver[id]];
                             //push failed, put it back.
                             process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
                         }
@@ -587,6 +606,7 @@ if (!cluster.isMaster) {//actual work flow
                     });
                 }else{
                     logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
+                    delete pushStatusPool[message.receiver[id]];
                     //push failed, put it back.
                     process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
                     logger.info("send a restore_push request to master from worker "+process.pid+" receivers are "+message.receiver[id]+", json is "+JSON.stringify(message.json));

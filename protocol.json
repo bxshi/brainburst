@@ -9,6 +9,7 @@
     },
     {//User Get
         "msg_id" : 1,
+        "type" : "user_login",
         "user" : {
             "user_id" : "UUID",
             "user_data" : "client defined, must be string"
@@ -51,6 +52,7 @@
     },
     {//User Get
         "msg_id" : 2,
+        "type" : "create_match",
         "status" : "ok||error",
         "msg" : "if status is error, this will show details about error",
         "match" : {
@@ -62,6 +64,7 @@
     {//if other players send create_match and invite you, you will get this.
         "msg_id" : -1,
         "type" : "invited_match",
+        "push_id" : "uuid-v1",
         "user" : {
             "user_id" : "UUID",
             "user_data" : "client defined, must be string"
@@ -75,6 +78,7 @@
     {//If you create a new match with auto, when a new player gets in, you will get this.
         "msg_id" : -1,
         "type" : "join_match",
+        "push_id" : "uuid-v1",
         "match" : {
             "match_id" : "match_UUID",
             "players" : ["UUID1", "UUID2", "..."]
@@ -95,6 +99,7 @@
     {//If your opponent discard his match, you will got this and no submit_match could be send.
         "msg_id" : -1,
         "type" : "leave_match",
+        "push_id" : "uuid-v1",
         "match" : {
             "match_id" : "match_UUID",
             "players" : ["UUID1", "UUID2", "..."]
@@ -115,6 +120,7 @@
     {//when a submit_match is sent to server, all players involved in this match will got this push.
         "msg_id" : -1,
         "type" : "update_match",
+        "push_id" : "uuid-v1",
         "match" : {
             "match_id" : "match_UUID",
             "from_opponent" : "user_uuid",
