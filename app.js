@@ -544,6 +544,7 @@ if (!cluster.isMaster) {//actual work flow
     msgHandler.on('PushResponse', function(connection, JSONmsg){
         try{
             pushStatusPool[JSONmsg.push_id].status = 'ok';
+            console.debug("got push response "+JSON.stringify(JSONmsg));
         }catch(e){
             logger.error("got an nonexist push uuid, maybe already returned");
         }
@@ -551,12 +552,18 @@ if (!cluster.isMaster) {//actual work flow
     });
 
     var checkPushStatus = function(push_id){
-      if(pushStatusPool[push_id]){//exists this push
+        console.log("push_id is "+push_id);
+      if(pushStatusPool[push_id]!=undefined){//exists this push
           if(pushStatusPool[push_id].status != 'ok'){// does not get response
-              console.error("push response timeout!");
+              logger.error("push response timeout!");
+              process.send({'type':"restore_push", 'receiver':[pushStatusPool[push_id].connection], 'json':pushStatusPool[push_id].json});
               delete pushStatusPool[push_id]; // restore push, and remove this.
-              process.send({'type':"restore_push", 'receiver':pushStatusPool[push_id].connection, 'json':pushStatusPool[push_id].json});
+          }else{
+              logger.debug("push response ok!");
+              delete pushStatusPool[push_id];
           }
+      }else{
+          logger.debug("no this push_id info, push may already restored!");
       }
     };
 
@@ -577,13 +584,14 @@ if (!cluster.isMaster) {//actual work flow
                             message.json.push_id = uuidGenerator();
                         }
                         pushStatusPool[message.json.push_id] = {'connection':message.receiver[id], 'json':message.json, 'status':'error'};
+                        logger.error("put push into status pool, "+JSON.stringify(pushStatusPool[message.json.push_id]));
                         setTimeout(checkPushStatus, 3000, message.json.push_id);
                     }
 
                     zlib.gzip(JSON.stringify(message.json), function(err, buffer){
                         try{
                             if(!err){
-                                logger.debug("push send to "+message.receiver[id]+" ok");
+                                logger.debug("push "+JSON.stringify(message.json)+" send to "+message.receiver[id]+" ok");
                                 connections[message.receiver[id]].sendBytes(buffer, function(err){
                                     if(err){
                                         logger.debug("send push error, error code is "+err);
