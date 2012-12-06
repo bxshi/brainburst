@@ -24,6 +24,14 @@ BotDAO.prototype.ensureIndex = function(game) {
     });
 };
 
+BotDAO.prototype.findCharacterStatus = function(game, callback){
+    this.connection.query(collectionName(game), function(collection){
+       collection.find().toArray(function(err, docs){
+         callback(docs);
+       });
+    });
+};
+
 BotDAO.prototype.findWord = function(game, str, mustStr, max_len, min_len, callback){
     var queryJSON = {};
 

@@ -84,6 +84,17 @@ if (!cluster.isMaster) {//actual work flow
 
     var connections = {};
 
+    //Pool of pushes [for each process]
+
+    /*
+     * key : uuid.v1()
+     *
+     * value : {'connection' : connection_id, 'pushData' : jsonstr, 'status': 'ok' || 'error'}
+     *
+     */
+
+    var pushStatusPool = {};
+
     wsServer.on('request', function (request) {
 
         try {
@@ -165,24 +176,7 @@ if (!cluster.isMaster) {//actual work flow
                 logger.debug("create an user " + JSON.stringify(user));
                 connections[connection.id] = connection;
                 var JSON2Send = JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user));
-                if(msgType == 'binary'){
-                    zlib.gzip(JSON2Send, function(err, buffer){
-                        if(!err){
-                            connection.sendBytes(buffer);
-                        }else{
-                            logger.warn("send "+connection.id+" binary JSON error:"+err);
-                        }
-                        logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
-
-                    });
-                }else{
-                    connection.sendUTF(JSON2Send, function(err){
-                        if(err){
-                            logger.warn("JSON send error! err message:"+err);
-                        }
-                        logger.debug("send "+user.user_id+" a JSON:"+JSON2Send);
-                    });
-                }
+                sendData(connection, JSON2Send);
                 logger.debug("connection accepted, worker pid is " + process.pid + ". user_id is " + connection.id+" ip is "+connection.remoteAddress);
                 //acknowledge master there is a new login(then master will try send push notifications)
                 process.send({'type':"get_push",'receiver':[connection.id]});
@@ -198,24 +192,7 @@ if (!cluster.isMaster) {//actual work flow
                 //user legal
                 playerDAO.updatePlayer(JSONmsg.user.user_id,JSONmsg.user,function(){
                     var JSON2Send = JSON.stringify(JSONBuilder.change_profile_builder(JSONmsg.msg_id, JSONmsg.user));
-                    if(msgType == 'binary'){
-                        zlib.gzip(JSON2Send, function(err, buffer){
-                            if(!err){
-                                connection.sendBytes(buffer);
-                            }else{
-                                logger.warn("send "+connection.id+" binary JSON error:"+err);
-                            }
-                            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
-
-                        });
-                    }else{
-                        connection.sendUTF(JSON2Send, function(err){
-                            if(err){
-                                logger.warn("JSON send error! err message:"+err);
-                            }
-                            logger.debug("send "+connection.id+" a JSON:"+JSON2Send);
-                        });
-                    }
+                    sendData(connection, JSON2Send);
                 });
             }else{
                 msgHandler.emit('IllegalJSON', connection, JSONmsg, msgType);
@@ -564,6 +541,15 @@ if (!cluster.isMaster) {//actual work flow
         }
     });
 
+    msgHandler.on('PushResponse', function(connection, JSONmsg){
+        try{
+            pushStatusPool[JSONmsg.push_id].status = 'ok';
+        }catch(e){
+            logger.error("got an nonexist push uuid, maybe already returned");
+        }
+
+    });
+
     //workers' push sending logic
     process.on('message', function(message){
         if(message.type=='send_push') {
@@ -571,13 +557,25 @@ if (!cluster.isMaster) {//actual work flow
             for(var id in message.receiver){
                 if(connections[message.receiver[id]]!=undefined) {
                     //what if the connection is dropped just after this ?
+//                    if(message.json.msg_id == -1){
+//                        if(message.json.push_id == ""){
+//                            message.json.push_id = uuidGenerator();
+//                        }
+//                        pushStatusPool[message.json.push_id] = {'connection':message.receiver[id], 'json':message.json, 'status':'error'};
+//                    }
                     zlib.gzip(JSON.stringify(message.json), function(err, buffer){
                         try{
                             if(!err){
                                 logger.debug("push send to "+message.receiver[id]+" ok");
-                                connections[message.receiver[id]].sendBytes(buffer);
+                                connections[message.receiver[id]].sendBytes(buffer, function(err){
+                                    if(err){
+                                        logger.debug("send push error, error code is "+err);
+                                        process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
+                                    }
+                                });
                             }else{
-                                logger.debug("push send status"+err);
+                                logger.debug("push send status "+err);
+                                throw("push zip error");
                             }
                         }catch(e){
                             logger.debug(e);

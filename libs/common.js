@@ -12,7 +12,11 @@ var logger = require("./logger.js");
 exports.sendData = function(connection, JSON2Send){
     zlib.gzip(JSON2Send, function(err, buffer){
         if(!err){
-            connection.sendBytes(buffer);
+            connection.sendBytes(buffer, function(err){
+                if(err){
+                    logger.warn("send json:"+JSON2Send+" error, err is "+err);
+                }
+            });
         }else{
             logger.warn("send "+connection.id+" binary JSON error:"+err);
         }

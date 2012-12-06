@@ -173,6 +173,12 @@ module.exports = {
             return false;
         }
         return true;
+    },
+    push_response : function(JSONmsg){
+        if(JSONmsg.type!='push_response' || JSONmsg.push_id == undefined){
+            return false;
+        }
+        return true;
     }
 };
 

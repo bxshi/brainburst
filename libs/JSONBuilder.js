@@ -42,6 +42,7 @@ module.exports = {
     },
     create_match_push_builder : function(match, players){
         var JSONObj = {'msg_id':-1, 'type':'invited_match'};
+        JSONObj.push_id = "";
         JSONObj.match = {'match_id':match['match_id'],'match_data':match['match_data']};
         if(players) {
             JSONObj.match.players = [];
@@ -54,6 +55,7 @@ module.exports = {
     },
     join_match_push_builder : function(match,players){
         var JSONObj = {'msg_id':-1, 'type':'join_match'};
+        JSONObj.push_id = "";
         JSONObj.match = {'match_id':match['match_id']};
         if(players) {
             JSONObj.match.players = [];
@@ -66,6 +68,7 @@ module.exports = {
     },
     leave_match_push_builder : function(match,players){
         var JSONObj = {'msg_id':-1, 'type':'leave_match'};
+        JSONObj.push_id = "";
         JSONObj.match = {'match_id': match['match_id']};
         if(players) {
             JSONObj.match.players = [];
@@ -93,6 +96,7 @@ module.exports = {
     },
     submit_match_push_builder : function(user_id,match, players){
         var JSONObj = {'msg_id':-1, 'type':'update_match'};
+        JSONObj.push_id = "";
         JSONObj.match = {'match_id':match.match_id,'from_opponent':user_id,'match_data':match.match_data};
         if(players){
             JSONObj.match.players = [];

@@ -22,6 +22,11 @@ var MessageHandler = function MessageHandler(){
 util.inherits(MessageHandler, EventEmitter);
 
 //check JSONmsg.type and emit different events
+
+/*
+ * type is desperated.
+ */
+
 MessageHandler.prototype.route = function(connection, JSONstr, type){
     try{
         var JSONmsg = JSON.parse(JSONstr);
@@ -94,6 +99,13 @@ MessageHandler.prototype.route = function(connection, JSONstr, type){
         case 'online_players':
             if(JSONValidation.online_players(JSONmsg)){
                 this.emit('OnlinePlayers', connection, JSONmsg, type);
+            }else{
+                this.emit(errorMsgHandler, connection, JSONmsg, type);
+            }
+            break;
+        case 'push_response':
+            if(JSONValidation.push_response(JSONmsg)){
+                this.emit('PushResponse', connection, JSONmsg, type);
             }else{
                 this.emit(errorMsgHandler, connection, JSONmsg, type);
             }
