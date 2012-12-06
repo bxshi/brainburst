@@ -22,10 +22,13 @@ ClientMessageHandler.prototype.route = function(connection, JSONstr){
         var JSONmsg = JSON.parse(JSONstr);
     }catch(e){
         this.emit('NotJSON', connection, JSONstr);
+        return;
     }
 
     console.dir(JSONmsg);
     if(JSONmsg.msg_id == -1){// this is a push
+
+        this.emit('PushResponse', connection, JSONmsg);
 
         switch(JSONmsg.type){
             case 'invited_match':
@@ -60,6 +63,9 @@ ClientMessageHandler.prototype.route = function(connection, JSONstr){
                 break;
             case 'online_players':
                 this.emit('OnlinePlayers', connection, JSONmsg);
+                break;
+            case 'push_response':
+                this.emit('PushResponse', connection, JSONmsg);
                 break;
         }
     }

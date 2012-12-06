@@ -28,7 +28,6 @@ module.exports = {
         }
         return JSONObj;
     },
-    user_login_error_builder : function(){},
     bot_match_builder : function(msg_id,game, user){
         var JSONObj = {'msg_id':msg_id, 'type':"bot_match", 'game':game,'max_players':2, 'create_method':"auto"};
         JSONObj.user = user;
@@ -50,7 +49,6 @@ module.exports = {
         }
         return JSONObj;
     },
-    create_match_error_builder : function(){},
     leave_match_builder : function(user,match_id){
         var JSONObj = {'msg_id': 3,'type':"leave_match",'game':"test_game"};
         if(user){
@@ -62,7 +60,6 @@ module.exports = {
         }
         return JSONObj;
     },
-    remove_match_error_builder : function(){},
     submit_match_builder : function(user,match){
         var JSONObj = {'msg_id':4,'type':"submit_match",'game':"test_game"};
         if(user){
@@ -73,7 +70,6 @@ module.exports = {
         }
         return JSONObj;
     },
-    submit_match_error_builder : function(){},
     get_matches_builder : function(user){
         var JSONObj = {'msg_id':5,'type':"get_matches",'game':"test_game"};
         if(user){
@@ -81,7 +77,6 @@ module.exports = {
         }
         return JSONObj;
     },
-    get_matches_error_builder : function(){},
     online_players_builder : function(user){
         var JSONObj = {'msg_id':6, 'type':"online_players"};
         if(user){
@@ -89,5 +84,8 @@ module.exports = {
         }
         return JSONObj;
     },
-    online_players_error_builder : function(){}
+    push_response_builder : function(push_id){
+        var JSONObj = {'msg_id':-1, 'type':'push_response', 'push_id':push_id};
+        return JSONObj;
+    }
 };

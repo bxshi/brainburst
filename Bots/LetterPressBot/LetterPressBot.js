@@ -387,4 +387,12 @@ if(cluster.isMaster){
     msgHandler.on('GetMatches', function(connection, JSONmsg){
         //when login, firstly deal with this.
     });
+
+    msgHandler.on('PushResponse', function(connection, JSONmsg){
+        if(JSONmsg.push_id){
+            console.log("send push response");
+            var JSON2Send = JSON.stringify(jsonBuilder.push_response_builder(JSONmsg.push_id));
+            sendData(connection, JSON2Send);
+        }
+    });
 }
