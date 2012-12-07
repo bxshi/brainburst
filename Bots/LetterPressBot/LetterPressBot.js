@@ -374,7 +374,7 @@ if(cluster.isMaster){
     };
 
     var submit_match_logic_wrapper = function(connection, JSONmsg){
-        setTimeout(submit_match_logic, Math.round(Math.random() * 100000)%(conn2Bot[connection].response_interval), connection, JSONmsg);
+        setTimeout(submit_match_logic, Math.round(Math.random() * 100000)%(conn2Bot[connection].response_interval)+10000, connection, JSONmsg);
     };
 
     msgHandler.on('UserLogin', function(connection, JSONmsg){
@@ -387,7 +387,7 @@ if(cluster.isMaster){
             logger.warn(conn2Bot[connection].nickname+" try check game");
             var JSON2Send = JSON.stringify(jsonBuilder.bot_match_builder(0, 'letterpress', conn2Bot[connection].user));
             sendData(connection, JSON2Send);
-        }, conn2Bot[connection]['check_interval'], connection);
+        }, conn2Bot[connection]['check_interval']+30000, connection);
     });
 
     msgHandler.on('BotMatch', submit_match_logic_wrapper);
