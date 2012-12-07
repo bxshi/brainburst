@@ -57,7 +57,7 @@ if (!cluster.isMaster) {//actual work flow
     memwatch.on('stats', function(data){
        logger.error("=====Stats =====");
        console.dir(data);
-       console.dir(hd.end());
+       console.dir(JSON.stringify(hd.end()));
        hd = new memwatch.HeapDiff();
     });
 
