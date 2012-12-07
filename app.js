@@ -18,6 +18,8 @@ var conf = new Conf();
 //workers -- handling websocket connections
 if (!cluster.isMaster) {//actual work flow
 
+    var memwatch = require("memwatch");
+
     // 3rd-party packages
     var uuidGenerator = require("./libs/uuidGenerator.js");
     var ce = require('cloneextend');
@@ -43,7 +45,21 @@ if (!cluster.isMaster) {//actual work flow
     var matchDAO = new match.MatchDAO(mongoClient);
     var playerDAO = new player.PlayerDAO(mongoClient);
 
+    var hd = new memwatch.HeapDiff();
 
+
+    //memory leak detection
+    memwatch.on('leak', function(info){
+       logger.error("=====Memory Leak=====");
+       console.dir(info);
+    });
+
+    memwatch.on('stats', function(data){
+       logger.error("=====Stats =====");
+       console.dir(data);
+       console.dir(hd.end());
+       hd = new memwatch.HeapDiff();
+    });
 
 //    var options = {
 //        key: fs.readFileSync('./ssl/server.key'),
@@ -181,7 +197,6 @@ if (!cluster.isMaster) {//actual work flow
                 //acknowledge master there is a new login(then master will try send push notifications)
                 process.send({'type':"get_push",'receiver':[connection.id]});
                 logger.debug("send a get_push request to master from worker "+process.pid+" receivers are "+connection.id);
-
             });
         }
     });

@@ -20,7 +20,8 @@
         "fs" : "*",
         "zlib" : "*",
         "events" : "*",
-        "util" : "*"
+        "util" : "*",
+        "memwatch" : "*"
     },
 
     "engines" : "0.8.x"
