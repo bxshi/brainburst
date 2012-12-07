@@ -12,11 +12,21 @@ var Bots = require("./BotConfig.js").BotConfigs;
 var cluster = require('cluster');
 
 if(cluster.isMaster){
+    var workersConcurrency = 3;
     var workers = [];
 
-    for(var i = 0; i< Bots.length; i++) {
-        workers[i] = cluster.fork({'id':i});
-    }
+    var botShifting = function(){
+        cluster.disconnect(function(){
+            console.log("=========Shifting Start=========");
+            console.log("=========New Bots will start working=========");
+            for(var i = 0; i< workersConcurrency;i++){//kill bots and restart a new one
+                workers[i] = cluster.fork({'id':Math.round(Math.random()*100) % Bots.length});
+            }
+            console.log("=========Shifting End=========");
+        });
+    };
+
+    setInterval(botShifting, 50000);
 
     //restart bot
     cluster.on('exit', function (worker, code, signal) {
