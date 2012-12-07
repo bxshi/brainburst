@@ -681,14 +681,14 @@ if (!cluster.isMaster) {//actual work flow
                         //TODO: does this foreach function series or async? If not series, it will cause push order problems.
                         for (var i in message.receiver){
                             queue.each(message.receiver[i],function(json){
-                                logger.error(JSON.stringify(json));
-                                cluster.workers[id].send({type:"send_push",'receiver':[message.receiver[i]],'json':json});
+                                logger.error(JSON.parse(json));
+                                cluster.workers[id].send({type:"send_push",'receiver':[message.receiver[i]],'json':JSON.parse(json)});
                             });
                         }
                         break;
                     case 'restore_push'://push that failed
                         if(message.json!=undefined){
-                            queue.pushToFront(message.receiver[0],message.json, function(err,reply){
+                            queue.pushToFront(message.receiver[0],JSON.stringify(message.json), function(err,reply){
                                 if(err){
                                     logger.error("restore push save error, "+err);
                                 }
