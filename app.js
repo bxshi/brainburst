@@ -48,18 +48,18 @@ if (!cluster.isMaster) {//actual work flow
     var hd = new memwatch.HeapDiff();
 
 
-    //memory leak detection
-    memwatch.on('leak', function(info){
-       logger.error("=====Memory Leak=====");
-       console.dir(info);
-    });
-
-    memwatch.on('stats', function(data){
-       logger.error("=====Stats =====");
-       console.dir(data);
-       console.dir(JSON.stringify(hd.end()));
-       hd = new memwatch.HeapDiff();
-    });
+//    //memory leak detection
+//    memwatch.on('leak', function(info){
+//       logger.error("=====Memory Leak=====");
+//       console.dir(info);
+//    });
+//
+//    memwatch.on('stats', function(data){
+//       logger.error("=====Stats =====");
+//       console.dir(data);
+//       console.dir(JSON.stringify(hd.end()));
+//       hd = new memwatch.HeapDiff();
+//    });
 
 //    var options = {
 //        key: fs.readFileSync('./ssl/server.key'),
@@ -129,8 +129,7 @@ if (!cluster.isMaster) {//actual work flow
                         message.utf8Data = buffer.toString();
                         //fix android send lots of \0 in message
                         var trimmed = message.utf8Data.split('\0');
-                        message.utf8Data = trimmed[0];
-                        msgHandler.route(connection, message.utf8Data, message.type);
+                        msgHandler.route(connection, trimmed[0], message.type);
                     }else{
                         logger.warn('Get binary data has an error '+err);
                     }
@@ -138,25 +137,26 @@ if (!cluster.isMaster) {//actual work flow
             }else if(message.type == 'utf8'){
                 //fix android send lots of \0 in message
                 var trimmed = message.utf8Data.split('\0');
-                message.utf8Data = trimmed[0];
-                msgHandler.route(connection, message.utf8Data, message.type);
+                msgHandler.route(connection, trimmed[0], message.type);
             }
 
         });
 
         connection.on('close', function (reasonCode, description) {
-            connection_pool.delConnection(connection.id, function () {
-                delete connections[connection.id];
-            });
+//            connection_pool.delConnection(connection.id, function () { // use connection variable may cause memory leaks.
+//                connections[connection.id] = null;
+//                delete connections[connection.id];
+//            });
         });
     });
 
     wsServer.on('close', function(connection, reason, description){
         connection_pool.delConnection(connection.id, function () {
+            connections[connection.id] = null;
             delete connections[connection.id];
         }); //re-delete to make sure
         logger.info("Peer " + connection.id + " disconnected");
-        connection.close();
+        connection.close(); // does this unnecessary?
     });
 
     //router logic
@@ -176,9 +176,17 @@ if (!cluster.isMaster) {//actual work flow
                     //acknowledge master there is a new login(then master will try send push notifications)
                     process.send({'type':"get_push",'receiver':[connection.id]});
                     logger.debug("send a get_push request to master from worker "+process.pid+" receivers are "+connection.id);
+
+                    //fix memory leaks
+                    JSONmsg = null;
+                    msgType = null;
                 } else {// user not exists
                     var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user does not exist"));
                     sendData(connection, JSON2Send);
+
+                    //fix memory leaks
+                    JSONmsg = null;
+                    msgType = null;
                 }
             });
         }else{//register
@@ -197,6 +205,12 @@ if (!cluster.isMaster) {//actual work flow
                 //acknowledge master there is a new login(then master will try send push notifications)
                 process.send({'type':"get_push",'receiver':[connection.id]});
                 logger.debug("send a get_push request to master from worker "+process.pid+" receivers are "+connection.id);
+
+                //fix memory leaks
+                JSONmsg = null;
+                msgType = null;
+                connection_uuid = null;
+                user = null;
             });
         }
     });
@@ -208,6 +222,10 @@ if (!cluster.isMaster) {//actual work flow
                 playerDAO.updatePlayer(JSONmsg.user.user_id,JSONmsg.user,function(){
                     var JSON2Send = JSON.stringify(JSONBuilder.change_profile_builder(JSONmsg.msg_id, JSONmsg.user));
                     sendData(connection, JSON2Send);
+
+                    //fix memory leaks
+                    JSONmsg = null;
+                    msgType = null;
                 });
             }else{
                 msgHandler.emit('IllegalJSON', connection, JSONmsg, msgType);
@@ -246,11 +264,23 @@ if (!cluster.isMaster) {//actual work flow
                                   var Push2Send = JSONBuilder.join_match_push_builder(match,players_sorted);
                                   process.send({'type':'new_push', 'receiver':push_players, 'json':Push2Send});
                                   logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSON.stringify(push_players)+", json is "+JSON.stringify(Push2Send));
+
+
+                                  //fix memory leaks
+                                  JSONmsg = null;
+                                  msgType = null;
+                                  push_players = null;
+                                  match = null;
+                                  player = null;
                               });
                           });
                       }catch(e){
-                            var JSON2Send = JSON.stringify({'msg_id':JSONmsg.msg_id,'type':JSONmsg.type, 'status':'error','msg':'no waiting matches'});
-                            sendData(connection, JSON2Send);
+                        var JSON2Send = JSON.stringify({'msg_id':JSONmsg.msg_id,'type':JSONmsg.type, 'status':'error','msg':'no waiting matches'});
+                        sendData(connection, JSON2Send);
+
+                        //fix memory leaks
+                        JSONmsg = null;
+                        msgType = null;
                       }
                    });
                }
@@ -296,6 +326,13 @@ if (!cluster.isMaster) {//actual work flow
                                     var Push2Send = JSONBuilder.join_match_push_builder(match,players_sorted);
                                     process.send({'type':'new_push', 'receiver':push_players, 'json':Push2Send});
                                     logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSON.stringify(push_players)+", json is "+JSON.stringify(Push2Send));
+
+                                    //fix memory leaks
+                                    JSONmsg = null;
+                                    push_players = null;
+                                    msgType = null;
+                                    match = null;
+                                    player = null;
                                 });
                             });
 
@@ -324,6 +361,13 @@ if (!cluster.isMaster) {//actual work flow
                                         }
                                         var JSON2Send = JSON.stringify(JSONBuilder.create_match_builder(JSONmsg.msg_id,'ok',null,match,players_sorted));
                                         sendData(connection, JSON2Send);
+
+                                        //fix memory leaks
+                                        JSONmsg = null;
+                                        msgType = null;
+                                        match_uuid = null;
+                                        match = null;
+
                                     });
                                 });
                         }
@@ -370,12 +414,25 @@ if (!cluster.isMaster) {//actual work flow
                                 process.send({'type':'new_push', 'receiver':JSONmsg.opponent_user_id, 'json':JSONBuilder.create_match_push_builder(match,players_sorted)});
                                 logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+JSONmsg.opponent_user_id+", json is "+JSON2Send);
 
+
+                                //fix memory leaks
+                                player = null;
+                                match_uuid = null;
+                                all_players = null;
+                                match_status = null;
+                                JSONmsg = null;
+                                match = null;
                             });
                         });
                 }
             }else{
                 msgHandler.emit('IllegalJSON', connection, JSONmsg, type);
                 logger.error("Get change_profile but user not login! request JSON is "+JSON.stringify(JSONmsg));
+
+
+                //fix memory leaks
+                JSONmsg = null;
+                msgType = null;
             }
         });
     });
@@ -411,16 +468,31 @@ if (!cluster.isMaster) {//actual work flow
                                 if(match.players.length>0){
                                     process.send({'type':'new_push', 'receiver':match.players, 'json':JSONBuilder.leave_match_push_builder(match,players_sorted)});
                                 }
+
+                                //fix memory leaks
+                                JSONmsg = null;
+                                msgType = null;
+                                match = null;
+                                players = null;
                             });
                         });
                     }catch(e){
                         var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,e));
                         sendData(connection, JSON2Send);
+
+                        //fix memory leaks
+                        JSONmsg = null;
+                        msgType = null;
+                        match = null;
                     }
                 });
             }else{
                 msgHandler.on('IllegalJSON', connection, JSONmsg, msgType);
                 logger.error("Get leave_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
+
+                //fix memory leaks
+                JSONmsg = null;
+                msgType = null;
             }
 
         });
@@ -449,6 +521,14 @@ if (!cluster.isMaster) {//actual work flow
                                 var Push2Send = JSONBuilder.submit_match_push_builder(JSONmsg.user.user_id,match,players_sorted);
                                 process.send({'type':'new_push','receiver':match.players,'json':Push2Send});
                                 logger.debug("send a new_push request to master from worker "+process.pid+" receivers are "+match.players+", json is "+JSON.stringify(Push2Send));
+
+                                //fix memory leaks
+                                JSONmsg = null;
+                                msgType = null;
+                                player = null;
+                                match = null;
+                                JSON2Send = null;
+
                             });
 
 
@@ -458,11 +538,21 @@ if (!cluster.isMaster) {//actual work flow
                         sendData(connection, JSON2Send);
 
                         logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"match not exists")));
+
+                        //fix memory leaks
+                        JSONmsg = null;
+                        msgType = null;
+                        player  = null;
                     }
                 });
             }else{
                 msgHandler.emit('IllegalJSON', connection, JSONmsg, msgType);
                 logger.error("Get submit_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
+
+                //fix memory leaks
+                JSONmsg = null;
+                msgType = null;
+                player = null;
             }
         });
     });
@@ -497,17 +587,34 @@ if (!cluster.isMaster) {//actual work flow
                             }
                             var JSON2Send = JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,matches,players_sorted));
                             sendData(connection, JSON2Send);
+
+                            JSONmsg = null;
+                            msgType = null;
+                            player = null;
+                            matches = null;
+                            start = null;
+                            limit = null;
+                            matches_players = null;
+
                         });
                     }else{
                         logger.error("NOMATCHES");
                         var JSON2Send = JSON.stringify(JSONBuilder.get_matches_builder(JSONmsg.msg_id,null,null));
                         sendData(connection, JSON2Send);
                         logger.debug("send "+JSONmsg.user.user_id+" a JSON:"+JSON2Send);
+
+                        JSONmsg = null;
+                        start = null;
+                        limit = null;
                     }
                 });
             }else{
                 msgHandler.emit("IllegalJSON", connection, JSONmsg, msgType);
                 logger.error("Get get_matches but user not login! request JSON is "+JSON.stringify(JSONmsg));
+
+                //fix memory leaks
+                JSONmsg = null;
+                msgType = null;
             }
         });
     });
@@ -531,11 +638,24 @@ if (!cluster.isMaster) {//actual work flow
                     playerDAO.getPlayersById(opponents_user_ids,function(opponents){
                         var JSON2Send = JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents));
                         sendData(connection, JSON2Send);
+
+                        //fix memory leaks
+                        JSONmsg = null;
+                        msgType = null;
+                        player = null;
+                        opponents_user_ids = null;
+                        start = null;
+                        limit = null;
                     });
                 });
             }else{
                 msgHandler.emit("IllegalJSON", connection, JSONmsg, msgType);
                 logger.error("Get online_players but user not login! request JSON is "+JSON.stringify(JSONmsg));
+
+                //fix memory leaks
+                JSONmsg = null;
+                msgType = null;
+                player = null;
             }
         });
     });
@@ -554,6 +674,7 @@ if (!cluster.isMaster) {//actual work flow
             var JSON2Send = JSON.stringify(JSONBuilder.error_builder());
             sendData(connection, JSON2Send);
         }
+
     });
 
     msgHandler.on('PushResponse', function(connection, JSONmsg){
@@ -572,9 +693,11 @@ if (!cluster.isMaster) {//actual work flow
           if(pushStatusPool[push_id].status != 'ok'){// does not get response
               logger.error("push response timeout!");
               process.send({'type':"restore_push", 'receiver':[pushStatusPool[push_id].connection], 'json':pushStatusPool[push_id].json});
+              pushStatusPool[push_id] = null;//fix memory leak
               delete pushStatusPool[push_id]; // restore push, and remove this.
           }else{
               logger.debug("push response ok!");
+              pushStatusPool[push_id] = null;//fix memory leak
               delete pushStatusPool[push_id];
           }
       }else{
@@ -611,6 +734,7 @@ if (!cluster.isMaster) {//actual work flow
                                     if(err){
                                         logger.debug("send push error, error code is "+err);
                                         process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
+                                        pushStatusPool[message.receiver[id]] = null; // fix memory leak
                                         delete pushStatusPool[message.receiver[id]];
                                     }
                                 });
@@ -621,6 +745,7 @@ if (!cluster.isMaster) {//actual work flow
                         }catch(e){
                             logger.debug(e);
                             logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
+                            pushStatusPool[message.receiver[id]] = null; // fix memory leak
                             delete pushStatusPool[message.receiver[id]];
                             //push failed, put it back.
                             process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
@@ -629,6 +754,7 @@ if (!cluster.isMaster) {//actual work flow
                     });
                 }else{
                     logger.debug("the user_id "+message.receiver[id]+" of this push is not online!");
+                    pushStatusPool[message.receiver[id]] = null;
                     delete pushStatusPool[message.receiver[id]];
                     //push failed, put it back.
                     process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
@@ -727,18 +853,28 @@ if (!cluster.isMaster) {//actual work flow
 
     cluster.on('exit', function (worker, code, signal) {
         logger.error('worker ' + worker.process.pid + ' terminated by singal '+signal+" and code "+code);
-        workers[worker.process.pid] = undefined;
+        workers[worker.process.pid] = null;
+        delete workers[worker.process.pid];
         //delete all out of date connections
-        redisConnectionPoolClient.getOnline('nothing', function(onlineplayers){
-            for(var i =0; i< onlineplayers.length;i++){
-                redisConnectionPoolClient.delConnection(onlineplayers[i]);
-            }
-        });
-
+        var workerPid = worker.process.pid;
+        clearDisconnectedConnections(workerPid);
         //restart worker
         var newWorker = cluster.fork();
         workers[newWorker.process.pid] = newWorker;
     });
+
+    var clearDisconnectedConnections = function(workerPid){
+        redisConnectionPoolClient.getOnline('nothing', function(onlineplayers){
+            for(var i =0; i< onlineplayers.length;i++){
+                //filter connections belong to this worker
+                redisConnectionPoolClient.getConnection(onlineplayers[i], function(uuid, obj){
+                    if(obj == workerPid){
+                        redisConnectionPoolClient.delConnection(uuid);
+                    }
+                });
+            }
+        });
+    };
 
     //Monitor stuff
 
