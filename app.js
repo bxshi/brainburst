@@ -45,7 +45,7 @@ if (!cluster.isMaster) {//actual work flow
     var matchDAO = new match.MatchDAO(mongoClient);
     var playerDAO = new player.PlayerDAO(mongoClient);
 
-    var hd = new memwatch.HeapDiff();
+//    var hd = new memwatch.HeapDiff();
 
 
 //    //memory leak detection
