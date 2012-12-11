@@ -53,6 +53,8 @@ BotDAO.prototype.findWord = function(game, str, mustStr, max_len, min_len, callb
 
     this.connection.query(collectionName(game), function(collection){
        collection.find(queryJSON, {'word' : 1}).sort({'length':-1}).toArray(function(err, docs){
+           //fix memory leaks
+           queryJSON = null;
           callback(docs);
        });
     });
@@ -65,6 +67,8 @@ BotDAO.prototype.insertWord = function(game, line, callback){
             if(err){
                 throw err;
             }
+            game = null;
+            line = null;
             callback();
         });
     });

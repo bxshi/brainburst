@@ -19,16 +19,19 @@ MatchDAO.prototype.ensureIndex = function(game) {
 			collection.ensureIndex({"match_id" : 1},{'background':'true'} ,function(err, msg) {
 				if(err) {
 					console.log('MatchDAO match_id index err :' + err);
-					throw err;
+                    parent = null;
+                    throw err;
 				}
                 collection.ensureIndex({"players" : 1},{'background':'true'} ,function(err, msg) {
                     if(err) {
                         console.log('MatchDAO players index err :' + err);
+                        parent = null;
                         throw err;
                     }
                     collection.ensureIndex({"status" : 1},{'background':'true'} ,function(err, msg) {
                         if(err) {
                             console.log('MatchDAO status index err :' + err);
+                            parent = null;
                             throw err;
                         }
                     });
@@ -46,7 +49,11 @@ MatchDAO.prototype.getMatchesByGameAndPlayer = function(game, player, start, num
 	// console.log(start + "  " + num);
 	this.connection.query(collectionName(game), function(collection) {
 		collection.find({'players': player}, {'limit': num, 'skip' : start}).sort({'timestamp':-1}).toArray(function(err, docs) {
-			callback(docs);
+			game = null;
+            player = null;
+            start = null;
+            num = null;
+            callback(docs);
 		});
 	});
 };
@@ -57,6 +64,8 @@ MatchDAO.prototype.getMatchById = function(game, id, callback) {
 		collection.findOne({'match_id': id}, function(err, match) {
 			if(err)
 				throw err;
+            game = null;
+            id = null;
 			callback(match);
 		});
 	});
@@ -77,6 +86,7 @@ MatchDAO.prototype.createMatch = function(game, match, callback) {
             if(err){
                console.log("Create Match error");
             }
+            game = null;
 			callback(match);
 		});
 	});
@@ -93,6 +103,9 @@ MatchDAO.prototype.updateMatch = function(game, match_id, match, callback) {
 		collection.update({'match_id': match_id}, match,  {}, function(err) {
 			if(err)
 				throw err;
+            game = null;
+            match_id = null;
+            match = null;
 			callback();
 		});
 	});
@@ -104,6 +117,8 @@ MatchDAO.prototype.pickOneWaitingMatch = function(game, playerId, callback) {
 		collection.findAndModify({'$and' : [{players : {'$nin' : [playerId]}}, {status : 'waiting'}]}, {}, {'$set' : {'status' : 'pending'}},{}, function(err,object) {
 			if(err)
 				throw err;
+            game = null;
+            playerId = null;
 			callback(object);
 		});
 	});

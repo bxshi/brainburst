@@ -18,6 +18,7 @@ PlayerDAO.prototype.getPlayerById = function(id, cb) {
     this.connection.query(collectionName, function(collection){
         collection.findOne({"user_id" : id}, function(err, doc){
             var player = doc;
+            id = null;
             cb(player);
         });
     });
@@ -31,7 +32,7 @@ PlayerDAO.prototype.getPlayersById = function(id_list, cb) {
                 throw err;
             }
             var players = docs;
-//            console.log("WTF"+JSON.stringify(docs));
+            id_list = null;
             cb(players);
         });
     });
@@ -51,6 +52,8 @@ PlayerDAO.prototype.getPlayersByIdList = function(id_list, cb) {
             players_list[i] = docs;
             count++;
             if(count == id_list.length){
+                id_list = null;
+                count = null;
                 cb(players_list);
             }
         });
@@ -64,6 +67,8 @@ PlayerDAO.prototype.updatePlayer = function(id,data,cb) {
             if(err){
                 throw err;
             }
+            id = null;
+            data = null;
             cb();
         });
     });
@@ -75,6 +80,7 @@ PlayerDAO.prototype.createPlayer = function(player, cb) {
     this.connection.query(collectionName, function(collection) {
         var doc = player
         collection.insert(doc, function(err){
+            player = null;
             cb();
         });
     });

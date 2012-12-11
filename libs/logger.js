@@ -12,19 +12,33 @@ var info = clc.green;
 var warning = clc.yellow.bold.bgCyan;
 var error = clc.red.bold.bgBlack;
 var time = clc.underline;
+
+
 module.exports={
     debug:function(msg){
         if(process.env.NODE_ENV=='development'){
-            console.log(time("["+new Date()+"]")+"["+process.pid+"] "+debug(msg));
+            var date = new Date();
+            console.log(time("["+date+"]")+"["+process.pid+"] "+debug(msg));
+            msg = null;
         }
+        date = null;
     },
     info:function(msg){
-            console.log(time("["+new Date()+"]")+"["+process.pid+"] "+info(msg));
+        var date = new Date();
+            console.log(time("["+date+"]")+"["+process.pid+"] "+info(msg));
+        msg = null;
+        date = null;
     },
     warn:function(msg){
-        console.log(time("["+new Date()+"]")+"["+process.pid+"] "+warning(msg));
+        var date = new Date();
+        console.log(time("["+date+"]")+"["+process.pid+"] "+warning(msg));
+        msg = null;
+        date = null;
     },
     error:function(msg){
-        console.log(time("["+new Date()+"]")+"["+process.pid+"] "+error(msg));
+        var date = new Date();
+        console.log(time("["+date+"]")+"["+process.pid+"] "+error(msg));
+        msg = null;
+        date = null;
     }
 };

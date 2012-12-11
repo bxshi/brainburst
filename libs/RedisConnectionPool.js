@@ -6,7 +6,7 @@
  * global connection pool.
  */
 
-var logger = require('./logger.js')
+var logger = require('./logger.js');
 var redis = require("redis");
 var Conf = require('../configuration.js');
 var conf = new Conf();

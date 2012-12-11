@@ -7,6 +7,10 @@
  * Main logic of this app.
  */
 
+//require('nodetime').profile({
+//    accountKey: 'd98a1f2e7795e4af728eea1d6e07732a0ec5f726',
+//    appName: 'Node.js Application'
+//});
 var cluster = require('cluster');
 var CPU_NUM = require('os').cpus().length;
 var logger = require('./libs/logger.js');
@@ -17,8 +21,6 @@ var conf = new Conf();
 
 //workers -- handling websocket connections
 if (!cluster.isMaster) {//actual work flow
-
-    var memwatch = require("memwatch");
 
     // 3rd-party packages
     var uuidGenerator = require("./libs/uuidGenerator.js");
@@ -45,20 +47,23 @@ if (!cluster.isMaster) {//actual work flow
     var matchDAO = new match.MatchDAO(mongoClient);
     var playerDAO = new player.PlayerDAO(mongoClient);
 
-//    var hd = new memwatch.HeapDiff();
-
-
-//    //memory leak detection
-//    memwatch.on('leak', function(info){
-//       logger.error("=====Memory Leak=====");
-//       console.dir(info);
-//    });
+//    var util = require('util');
+//    var memwatch = require('memwatch');
 //
-//    memwatch.on('stats', function(data){
-//       logger.error("=====Stats =====");
-//       console.dir(data);
-//       console.dir(JSON.stringify(hd.end()));
-//       hd = new memwatch.HeapDiff();
+//    var heapDiffer = new memwatch.HeapDiff();
+//
+//    memwatch.on('stats', function checkMemory(info){
+//
+//        var diff = heapDiffer.end();
+//        console.log("Before heap info");
+//        console.log(util.inspect(diff.before, true, null));
+//
+//        console.log("After heap info");
+//        console.log(util.inspect(diff.after, true, null));
+//
+//        console.log("Heap changes");
+//        console.log(util.inspect(diff.change, true, null));
+//        heapDiffer = new memwatch.HeapDiff();
 //    });
 
 //    var options = {
@@ -74,13 +79,13 @@ if (!cluster.isMaster) {//actual work flow
 //    });
 
 
-    var server = http.createServer(function (request, response) {
+    var server = http.createServer(function DebugHttpServerReturn(request, response) {
         logger.warn("Received http request for " + request.url + " that maybe an attack?");
         response.writeHead(404);
         response.end();
     });
 
-    server.listen(conf.WebSocketPort, function () {
+    server.listen(conf.WebSocketPort, function DebugListeningPort() {
         logger.info('Server started, listening on port' + conf.WebSocketPort);
     });
 
@@ -111,60 +116,70 @@ if (!cluster.isMaster) {//actual work flow
 
     var pushStatusPool = {};
 
-    wsServer.on('request', function (request) {
+    wsServer.on('request', function DebugRequestHandler(request) {
 
         try {
             var connection = request.accept('brain_burst', request.origin);
         } catch (e) {
             logger.warn("connection from " + request.remoteAddress + " is rejected, it does not holding the supported protocol.");
             request.reject('not supported');
+            request = null;
+            connection = null;
             return;
         }
 
         //route of connection
-        connection.on('message', function (message) {
+        connection.on('message', function DebugMessageHandler(message) {
             if (message.type == 'binary') {
-                zlib.unzip(message.binaryData, function(err, buffer){
+                zlib.unzip(message.binaryData, function DebugMessageUnZipCB(err, buffer){
                     if(!err){
                         message.utf8Data = buffer.toString();
                         //fix android send lots of \0 in message
-                        var trimmed = message.utf8Data.split('\0');
-                        msgHandler.route(connection, trimmed[0], message.type);
+                        var trimmed = message.utf8Data.split('\0')[0];
+                        msgHandler.route(connection, trimmed);
+                        message = null;
                     }else{
                         logger.warn('Get binary data has an error '+err);
                     }
                 });
             }else if(message.type == 'utf8'){
                 //fix android send lots of \0 in message
-                var trimmed = message.utf8Data.split('\0');
-                msgHandler.route(connection, trimmed[0], message.type);
+                var trimmed = message.utf8Data.split('\0')[0];
+                msgHandler.route(connection, trimmed);
+                message = null;
             }
 
         });
 
-        connection.on('close', function (reasonCode, description) {
-//            connection_pool.delConnection(connection.id, function () { // use connection variable may cause memory leaks.
-//                connections[connection.id] = null;
-//                delete connections[connection.id];
-//            });
-        });
+//        connection.on('close', function (reasonCode, description) {
+////            connection_pool.delConnection(connection.id, function () { // use connection variable may cause memory leaks.
+////                connections[connection.id] = null;
+////                delete connections[connection.id];
+////            });
+//        });
     });
 
-    wsServer.on('close', function(connection, reason, description){
-        connection_pool.delConnection(connection.id, function () {
-            connections[connection.id] = null;
-            delete connections[connection.id];
-        }); //re-delete to make sure
-        logger.info("Peer " + connection.id + " disconnected");
-        connection.close(); // does this unnecessary?
+    wsServer.on('close', function DebugwsServerOnClose(connection, reason, description){
+        var id = connection.id;
+        connection = null;
+        reason = null;
+        description = null;
+        if(id){
+            connection_pool.delConnection(id, function DebugAfterDeleteConn() {
+                connections[id] = null;
+                delete connections[id];
+                id = null;
+            }); //re-delete to make sure
+        }
+        logger.info("Peer " + id + " disconnected");
     });
 
     //router logic
 
-    msgHandler.on('UserLogin', function(connection, JSONmsg, msgType){
+    msgHandler.on('UserLogin', function DebugHandleUserLogin(connection, JSONmsg){
         if (JSONmsg.user.user_id!=undefined) {//login
             // user validation (mongoDB)
-            playerDAO.getPlayerById(JSONmsg.user.user_id, function (doc) {
+            playerDAO.getPlayerById(JSONmsg.user.user_id, function DebugCBgetPlayerById(doc) {
                 if (doc) {// it is a true user
                     logger.info("mongoDB getPlayer " + JSON.stringify(doc));
                     connection_pool.setConnection(JSONmsg.user.user_id, process.pid);
@@ -179,14 +194,14 @@ if (!cluster.isMaster) {//actual work flow
 
                     //fix memory leaks
                     JSONmsg = null;
-                    msgType = null;
+                    connection = null;
                 } else {// user not exists
                     var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id,"user does not exist"));
                     sendData(connection, JSON2Send);
 
                     //fix memory leaks
                     JSONmsg = null;
-                    msgType = null;
+                    connection = null;
                 }
             });
         }else{//register
@@ -196,7 +211,7 @@ if (!cluster.isMaster) {//actual work flow
             //TODO: add other data fields e.g. A game String specify your game type.(If two games are using the same server, this must be specify)
             //TODO: easily, we could just add a prefix on user_id, like test_game_23df4-sf4wsf2-w44gsf-blablabla
             var user = {user_id:connection.id, user_data:JSONmsg.user.user_data};
-            playerDAO.createPlayer(user, function () {
+            playerDAO.createPlayer(user, function DebugCBcreatePlayer() {
                 logger.debug("create an user " + JSON.stringify(user));
                 connections[connection.id] = connection;
                 var JSON2Send = JSON.stringify(JSONBuilder.user_login_builder(JSONmsg.msg_id,user));
@@ -208,48 +223,45 @@ if (!cluster.isMaster) {//actual work flow
 
                 //fix memory leaks
                 JSONmsg = null;
-                msgType = null;
                 connection_uuid = null;
                 user = null;
+                connection = null;
             });
         }
     });
 
-    msgHandler.on('ChangeProfile', function(connection, JSONmsg, msgType){
-        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+    msgHandler.on('ChangeProfile', function DebugCBChangeProfile(connection, JSONmsg){
+        playerDAO.getPlayerById(JSONmsg.user.user_id,function DebugCBgetPlayerById1(player){
             if(player != null && JSONmsg.user.user_id == connection.id){
                 //user legal
-                playerDAO.updatePlayer(JSONmsg.user.user_id,JSONmsg.user,function(){
+                playerDAO.updatePlayer(JSONmsg.user.user_id,JSONmsg.user,function DebugCBupdatePlayer(){
                     var JSON2Send = JSON.stringify(JSONBuilder.change_profile_builder(JSONmsg.msg_id, JSONmsg.user));
                     sendData(connection, JSON2Send);
 
                     //fix memory leaks
                     JSONmsg = null;
-                    msgType = null;
+                    connection = null;
                 });
             }else{
-                msgHandler.emit('IllegalJSON', connection, JSONmsg, msgType);
+                msgHandler.emit('IllegalJSON', connection, JSONmsg);
                 logger.error("Get change_profile but user not login! request JSON is "+JSON.stringify(JSONmsg));
             }
         });
     });
 
-    msgHandler.on('BotMatch', function(connection, JSONmsg, msgType){
-        playerDAO.getPlayerById(JSONmsg.user.user_id, function(player){
+    msgHandler.on('BotMatch', function(connection, JSONmsg){
+        playerDAO.getPlayerById(JSONmsg.user.user_id, function DebugCBgetPlayerById2(player){
            if(player != null && JSONmsg.user.user_id == connection.id){
                if(JSONmsg.create_method == 'auto'){
                    matchDAO.ensureIndex(JSONmsg.game);
-                   matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function(match){
-                      try{
-                          if(match == undefined){
-                              throw "no waiting matches";
-                          }
+                   matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function DebugCBpickOneWaitingMatch(match){
+                      if(match != undefined){
                           var push_players = ce.clone(match['players']);
                           match['players'][match['players'].length] = JSONmsg.user.user_id;
                           if (match['players'].length == match['max_players']){//if there is enough people here
                               match['status'] = 'pending';
                           }
-                          matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
+                          matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function DebugCBupdateMatch(){
                               playerDAO.getPlayersById(match.players, function(players){
                                   //send json back to user
                                   //TODO: optimize sort function
@@ -268,19 +280,17 @@ if (!cluster.isMaster) {//actual work flow
 
                                   //fix memory leaks
                                   JSONmsg = null;
-                                  msgType = null;
                                   push_players = null;
                                   match = null;
                                   player = null;
                               });
                           });
-                      }catch(e){
+                      }else{
                         var JSON2Send = JSON.stringify({'msg_id':JSONmsg.msg_id,'type':JSONmsg.type, 'status':'error','msg':'no waiting matches'});
                         sendData(connection, JSON2Send);
 
                         //fix memory leaks
                         JSONmsg = null;
-                        msgType = null;
                       }
                    });
                }
@@ -288,20 +298,22 @@ if (!cluster.isMaster) {//actual work flow
         });
     });
 
-    msgHandler.on('CreateMatch', function(connection, JSONmsg, msgType){
+    msgHandler.on('CreateMatch', function DebugCBCreateMatch(connection, JSONmsg){
         //TODO: simplify login check, just compare connection.id and user.user_id
-        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+        playerDAO.getPlayerById(JSONmsg.user.user_id,function DebugCBgetPlayerById11(player){
             if(player != null && JSONmsg.user.user_id == connection.id){
                 if(JSONmsg.create_method == 'auto'){
                     //search for existing waiting match
                     matchDAO.ensureIndex(JSONmsg.game);
                     //TODO: Where there be a problem that A submit data, and while this B got this data?
-                    matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function(match){
+                    matchDAO.pickOneWaitingMatch(JSONmsg.game, JSONmsg.user.user_id, function DebugCBpickOneWaitingMatch2(match){
                         //TODO: Maybe need add error handling?
                         try{
                             //the returned variable match is not a list but a single object
                             if(match==undefined)
-                                throw "no waiting matches";
+                                { //noinspection ExceptionCaughtLocallyJS
+                                    throw "no waiting matches";
+                                }
                             //DONE: add check to exclude game created by user its own.
 //                                            console.dir(match);
                             //if get a match with waiting status, join it
@@ -311,8 +323,8 @@ if (!cluster.isMaster) {//actual work flow
                                 match['status'] = 'pending';
                             }
 //                                            console.log(match['players']);
-                            matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function(){
-                                playerDAO.getPlayersById(match.players, function(players){
+                            matchDAO.updateMatch(JSONmsg.game,match['match_id'],match, function DebugCBupdateMatch22(){
+                                playerDAO.getPlayersById(match.players, function DebugCBgetPlayersById3(players){
                                     //send json back to user
                                     //TODO: optimize sort function
                                     var players_sorted=[];
@@ -330,9 +342,9 @@ if (!cluster.isMaster) {//actual work flow
                                     //fix memory leaks
                                     JSONmsg = null;
                                     push_players = null;
-                                    msgType = null;
                                     match = null;
                                     player = null;
+                                    connection = null;
                                 });
                             });
 
@@ -348,11 +360,11 @@ if (!cluster.isMaster) {//actual work flow
                                     'status':'waiting',
                                     'match_data':JSONmsg.match.match_data
                                 },
-                                function(match){//successfully created
+                                function DebugCBcreateMatch3(match){//successfully created
                                     //the returned variable match is a list, so need to change it to the first object
                                     match = match[match.length-1];
                                     logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
-                                    playerDAO.getPlayersById(match.players, function(players){
+                                    playerDAO.getPlayersById(match.players, function DebugCBgetPlayersById5(players){
                                         //send json back to client
                                         //TODO: optimize sort function
                                         var players_sorted=[];
@@ -364,9 +376,9 @@ if (!cluster.isMaster) {//actual work flow
 
                                         //fix memory leaks
                                         JSONmsg = null;
-                                        msgType = null;
                                         match_uuid = null;
                                         match = null;
+                                        connection = null;
 
                                     });
                                 });
@@ -387,14 +399,14 @@ if (!cluster.isMaster) {//actual work flow
                     }
                     matchDAO.ensureIndex(JSONmsg.game);
                     matchDAO.createMatch(JSONmsg.game,{'match_id':match_uuid,'max_players':JSONmsg.max_players,'players':all_players,'status':match_status,'match_data':JSONmsg.match.match_data},
-                        function(match){//successfully created
+                        function DebugCBcreateMatch0(match){//successfully created
                             //the returned variable match is a list, so need to change it to the first object
                             match = match[match.length-1];
                             logger.info(JSONmsg.game+" match created, uuid is "+match_uuid+" created by "+JSONmsg.user.user_id+", status is waiting");
 
                             //get opponent user
 
-                            playerDAO.getPlayersById(match.players,function(players){
+                            playerDAO.getPlayersById(match.players,function DebugCBgetPlayersById45(players){
 
                                 if(!players){
                                     logger.error("ERR! "+JSONmsg);
@@ -422,39 +434,41 @@ if (!cluster.isMaster) {//actual work flow
                                 match_status = null;
                                 JSONmsg = null;
                                 match = null;
+                                connection = null;
                             });
                         });
                 }
             }else{
-                msgHandler.emit('IllegalJSON', connection, JSONmsg, type);
+                msgHandler.emit('IllegalJSON', connection, JSONmsg);
                 logger.error("Get change_profile but user not login! request JSON is "+JSON.stringify(JSONmsg));
 
 
                 //fix memory leaks
                 JSONmsg = null;
-                msgType = null;
+                connection = null;
             }
         });
     });
 
-    msgHandler.on('LeaveMatch', function(connection, JSONmsg, msgType){
-        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+    msgHandler.on('LeaveMatch', function DebugLeaveMatch(connection, JSONmsg){
+        playerDAO.getPlayerById(JSONmsg.user.user_id,function DebugCBgetPlayerById456(player){
             if(player != null && JSONmsg.user.user_id == connection.id){
                 //DONE: validate match_id
-                matchDAO.getMatchById(JSONmsg.game, JSONmsg.match.match_id, function(match){
+                matchDAO.getMatchById(JSONmsg.game, JSONmsg.match.match_id, function DebugCBgetmatchById13542(match){
                     try{
                         if(match==undefined){
+                            //noinspection ExceptionCaughtLocallyJS
                             throw "no such match";
                         }
                         //remove user
-                        for(var i in match.players) {
+                        for(var i = 0; i < match.players.length; i++) {
                             if (match.players[i] == JSONmsg.user.user_id){
                                 match.players.splice(i,1);
                             }
                         }
                         match.status = "end";
-                        playerDAO.getPlayersById(match.players, function(players){
-                            matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function(){
+                        playerDAO.getPlayersById(match.players, function DebugCBgetPlayersById684(players){
+                            matchDAO.updateMatch(JSONmsg.game, JSONmsg.match.match_id, match,function DebugCBupdateMatch583(){
                                 //TODO: optimize sort function
                                 var players_sorted=[];
                                 for(var i=0; i<players.length;i++){
@@ -471,9 +485,9 @@ if (!cluster.isMaster) {//actual work flow
 
                                 //fix memory leaks
                                 JSONmsg = null;
-                                msgType = null;
                                 match = null;
                                 players = null;
+                                connection = null;
                             });
                         });
                     }catch(e){
@@ -482,36 +496,36 @@ if (!cluster.isMaster) {//actual work flow
 
                         //fix memory leaks
                         JSONmsg = null;
-                        msgType = null;
                         match = null;
+                        connection = null;
                     }
                 });
             }else{
-                msgHandler.on('IllegalJSON', connection, JSONmsg, msgType);
+                msgHandler.on('IllegalJSON', connection, JSONmsg);
                 logger.error("Get leave_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
 
                 //fix memory leaks
                 JSONmsg = null;
-                msgType = null;
+                connection = null;
             }
 
         });
     });
 
-    msgHandler.on('SubmitMatch', function(connection, JSONmsg, msgType){
+    msgHandler.on('SubmitMatch', function DebugSubmitMatch(connection, JSONmsg){
         //validate login
-        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+        playerDAO.getPlayerById(JSONmsg.user.user_id,function DebuggetPlayerById2496(player){
             if(player != null && JSONmsg.user.user_id == connection.id){
-                matchDAO.getMatchById(JSONmsg.game,JSONmsg.match.match_id, function(match){
+                matchDAO.getMatchById(JSONmsg.game,JSONmsg.match.match_id, function DebugCBgetmatchById3479(match){
                     if(match != null){
                         //DONE do we need validation about who should submit match data? (No need)
                         match.match_data = JSONmsg.match.match_data;
-                        matchDAO.updateMatch(JSONmsg.game,JSONmsg.match.match_id,match,function(){
+                        matchDAO.updateMatch(JSONmsg.game,JSONmsg.match.match_id,match,function DebugCBupdateMatch48935(){
                             var JSON2Send = JSON.stringify(JSONBuilder.response_json_builder(JSONmsg.msg_id));
                             sendData(connection, JSON2Send);
                             //push to all players
 
-                            playerDAO.getPlayersById(match.players, function(players){
+                            playerDAO.getPlayersById(match.players, function DebugCBgetPlayersById6987d(players){
                                 //send json back to client
                                 //TODO: optimize sort function
                                 var players_sorted=[];
@@ -524,10 +538,10 @@ if (!cluster.isMaster) {//actual work flow
 
                                 //fix memory leaks
                                 JSONmsg = null;
-                                msgType = null;
                                 player = null;
                                 match = null;
                                 JSON2Send = null;
+                                connection = null;
 
                             });
 
@@ -541,25 +555,25 @@ if (!cluster.isMaster) {//actual work flow
 
                         //fix memory leaks
                         JSONmsg = null;
-                        msgType = null;
                         player  = null;
+                        connection = null;
                     }
                 });
             }else{
-                msgHandler.emit('IllegalJSON', connection, JSONmsg, msgType);
+                msgHandler.emit('IllegalJSON', connection, JSONmsg);
                 logger.error("Get submit_match but user not login! request JSON is "+JSON.stringify(JSONmsg));
 
                 //fix memory leaks
                 JSONmsg = null;
-                msgType = null;
                 player = null;
+                connection = null;
             }
         });
     });
 
-    msgHandler.on('GetMatches', function(connection, JSONmsg, msgType){
+    msgHandler.on('GetMatches', function DebugGetMatches(connection, JSONmsg){
         //validate login
-        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+        playerDAO.getPlayerById(JSONmsg.user.user_id,function DebuggetPlayerById594083(player){
             if(player != null && JSONmsg.user.user_id == connection.id){
                 //TODO: add start and limit to json protocol
                 var start = 0;
@@ -570,18 +584,18 @@ if (!cluster.isMaster) {//actual work flow
                 if(JSONmsg.limit!=undefined && (typeof JSONmsg.limit) == (typeof 1)){
                     limit = JSONmsg.limit;
                 }
-                matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,start,limit,function(matches){
+                matchDAO.getMatchesByGameAndPlayer(JSONmsg.game,JSONmsg.user.user_id,start,limit,function DebuggetMatchesbyGameAndPlayer3(matches){
                     if (matches.length != 0){
                         var matches_players = [];
                         for(var i = 0; i< matches.length; i++) {
                             matches_players[i] = matches[i].players;
                         }
-                        playerDAO.getPlayersByIdList(matches_players,function(match_players){
+                        playerDAO.getPlayersByIdList(matches_players,function DebugCBgetPlayersByIdList4397853(match_players){
                             //TODO: optimize sort function
                             var players_sorted=[];
-                            for(var i in match_players){
-                                players_sorted[parseInt(i)] = [];
-                                for(var j=0;j<matches_players[parseInt(i)].length; j++){
+                            for(var i =0; i< match_players.length;i++){
+                                players_sorted[i] = [];
+                                for(var j=0;j<matches_players[i].length; j++){
                                     players_sorted[parseInt(i)][matches_players[parseInt(i)].indexOf(match_players[i][j].user_id)] = match_players[i][j];
                                 }
                             }
@@ -589,7 +603,6 @@ if (!cluster.isMaster) {//actual work flow
                             sendData(connection, JSON2Send);
 
                             JSONmsg = null;
-                            msgType = null;
                             player = null;
                             matches = null;
                             start = null;
@@ -609,21 +622,21 @@ if (!cluster.isMaster) {//actual work flow
                     }
                 });
             }else{
-                msgHandler.emit("IllegalJSON", connection, JSONmsg, msgType);
+                msgHandler.emit("IllegalJSON", connection, JSONmsg);
                 logger.error("Get get_matches but user not login! request JSON is "+JSON.stringify(JSONmsg));
 
                 //fix memory leaks
                 JSONmsg = null;
-                msgType = null;
+                connection = null;
             }
         });
     });
 
-    msgHandler.on('OnlinePlayers', function(connection, JSONmsg, msgType){
+    msgHandler.on('OnlinePlayers', function DebugOnlinePlayers(connection, JSONmsg){
         //validate login
-        playerDAO.getPlayerById(JSONmsg.user.user_id,function(player){
+        playerDAO.getPlayerById(JSONmsg.user.user_id,function DebugCBgetPlayerById94068(player){
             if(player != null && JSONmsg.user.user_id == connection.id){
-                connection_pool.getOnline(JSONmsg.user.user_id, function(opponents_user_ids){
+                connection_pool.getOnline(JSONmsg.user.user_id, function DebuggetOnline489(opponents_user_ids){
                     var start=0;
                     var limit=20;
                     if(JSONmsg.start != undefined && (typeof JSONmsg.start) == (typeof 1)){
@@ -635,37 +648,37 @@ if (!cluster.isMaster) {//actual work flow
                     //trim opponents_user_id
                     opponents_user_ids.splice(0,start);
                     opponents_user_ids.splice(start+limit,opponents_user_ids.length - start - limit);
-                    playerDAO.getPlayersById(opponents_user_ids,function(opponents){
+                    playerDAO.getPlayersById(opponents_user_ids,function DebugCBgetPlayersByIf54893(opponents){
                         var JSON2Send = JSON.stringify(JSONBuilder.online_players_builder(JSONmsg.msg_id,opponents));
                         sendData(connection, JSON2Send);
 
                         //fix memory leaks
                         JSONmsg = null;
-                        msgType = null;
                         player = null;
                         opponents_user_ids = null;
                         start = null;
                         limit = null;
+                        connection = null;
                     });
                 });
             }else{
-                msgHandler.emit("IllegalJSON", connection, JSONmsg, msgType);
+                msgHandler.emit("IllegalJSON", connection, JSONmsg);
                 logger.error("Get online_players but user not login! request JSON is "+JSON.stringify(JSONmsg));
 
                 //fix memory leaks
                 JSONmsg = null;
-                msgType = null;
                 player = null;
+                connection = null;
             }
         });
     });
 
-    msgHandler.on('NotJSON', function(connection, msgType){
+    msgHandler.on('NotJSON', function DebugNotJSON(connection){
         var JSON2Send = JSON.stringify({'status':"error", 'msg':"hey, DO not try to fuck me up!"});
         sendData(connection, JSON2Send);
     });
 
-    msgHandler.on('IllegalJSON', function(connection, JSONmsg, msgType){
+    msgHandler.on('IllegalJSON', function DebugIllegalJSON(connection, JSONmsg){
         if(JSONmsg){
             var JSON2Send = JSON.stringify(JSONBuilder.illegal_json_builder(JSONmsg.msg_id, "json illegal"));
             sendData(connection, JSON2Send);
@@ -677,7 +690,7 @@ if (!cluster.isMaster) {//actual work flow
 
     });
 
-    msgHandler.on('PushResponse', function(connection, JSONmsg){
+    msgHandler.on('PushResponse', function DebugPushREsponse(connection, JSONmsg){
         try{
             pushStatusPool[JSONmsg.push_id].status = 'ok';
             console.debug("got push response "+JSON.stringify(JSONmsg));
@@ -687,7 +700,7 @@ if (!cluster.isMaster) {//actual work flow
 
     });
 
-    var checkPushStatus = function(push_id){
+    var checkPushStatus = function checkPushStatus(push_id){
         console.log("push_id is "+push_id);
       if(pushStatusPool[push_id]!=undefined){//exists this push
           if(pushStatusPool[push_id].status != 'ok'){// does not get response
@@ -695,23 +708,27 @@ if (!cluster.isMaster) {//actual work flow
               process.send({'type':"restore_push", 'receiver':[pushStatusPool[push_id].connection], 'json':pushStatusPool[push_id].json});
               pushStatusPool[push_id] = null;//fix memory leak
               delete pushStatusPool[push_id]; // restore push, and remove this.
+              push_id = null;
           }else{
               logger.debug("push response ok!");
               pushStatusPool[push_id] = null;//fix memory leak
               delete pushStatusPool[push_id];
+              push_id = null;
           }
       }else{
           logger.debug("no this push_id info, push may already restored!");
+          push_id = null;
       }
     };
 
     //check status of push
 
     //workers' push sending logic
-    process.on('message', function(message){
+    process.on('message', function DebugChildHandleMessage(message){
         if(message.type=='send_push') {
             //There we use a loop, but there some callback functions, will that cause conflict about message.receiver[i]?
-            for(var id in message.receiver){
+            var send_message_count = 0;
+            for(var id=0; id < message.receiver.length; id++){
                 if(connections[message.receiver[id]]!=undefined) {
                     //what if the connection is dropped just after this ?
 
@@ -726,20 +743,27 @@ if (!cluster.isMaster) {//actual work flow
                         setTimeout(checkPushStatus, 3000, message.json.push_id);
                     }
 
-                    zlib.gzip(JSON.stringify(message.json), function(err, buffer){
+                    var tmp_id = id;
+                    zlib.gzip(JSON.stringify(message.json), function DebugGzip2389(err, buffer){
                         try{
                             if(!err){
-                                logger.debug("push "+JSON.stringify(message.json)+" send to "+message.receiver[id]+" ok");
-                                connections[message.receiver[id]].sendBytes(buffer, function(err){
+                                logger.debug("push "+JSON.stringify(message.json)+" send to "+message.receiver[tmp_id]+" ok");
+                                connections[message.receiver[tmp_id]].sendBytes(buffer, function(err){
                                     if(err){
                                         logger.debug("send push error, error code is "+err);
-                                        process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
-                                        pushStatusPool[message.receiver[id]] = null; // fix memory leak
-                                        delete pushStatusPool[message.receiver[id]];
+                                        process.send({'type':"restore_push", 'receiver':[message.receiver[tmp_id]], 'json':message.json});
+                                        pushStatusPool[message.receiver[tmp_id]] = null; // fix memory leak
+                                        delete pushStatusPool[message.receiver[tmp_id]];
+                                    }
+                                    tmp_id = null;
+                                    send_message_count++;
+                                    if(send_message_count == message.receiver.length){
+                                        message = null;
                                     }
                                 });
                             }else{
                                 logger.debug("push send status "+err);
+                                //noinspection ExceptionCaughtLocallyJS
                                 throw("push zip error");
                             }
                         }catch(e){
@@ -749,6 +773,10 @@ if (!cluster.isMaster) {//actual work flow
                             delete pushStatusPool[message.receiver[id]];
                             //push failed, put it back.
                             process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
+                            send_message_count++;
+                            if(send_message_count == message.receiver.length){
+                                message = null;
+                            }
                         }
 
                     });
@@ -759,6 +787,10 @@ if (!cluster.isMaster) {//actual work flow
                     //push failed, put it back.
                     process.send({'type':"restore_push", 'receiver':[message.receiver[id]], 'json':message.json});
                     logger.info("send a restore_push request to master from worker "+process.pid+" receivers are "+message.receiver[id]+", json is "+JSON.stringify(message.json));
+                    send_message_count++;
+                    if(send_message_count == message.receiver.length){
+                        message = null;
+                    }
                 }
             }
         }
@@ -797,7 +829,8 @@ if (!cluster.isMaster) {//actual work flow
                 logger.debug("Get a Push from worker:"+JSON.stringify(message));
                 switch(message.type){
                     case 'new_push':
-                        for (var i in message.receiver){
+                        var new_push_count = 0;
+                        for (var i =0; i< message.receiver.length;i++){
                             //find out which worker is handling this connection
                             redisConnectionPoolClient.getConnection(message.receiver[i], function(user_id,pid){
                                 logger.debug("get "+user_id+"'s worker: "+pid);
@@ -811,19 +844,31 @@ if (!cluster.isMaster) {//actual work flow
                                         }else{
                                             logger.debug("restore push saved, "+reply);
                                         }
+                                        new_push_count++;
+                                        if(new_push_count == message.receiver.length){
+                                            message = null;
+                                            new_push_count = null;
+                                        }
                                     });
                                 }else{
                                     workers[pid].send({'type':"send_push", 'receiver':[user_id], 'json':message.json});
+                                    new_push_count++;
+                                    if(new_push_count == message.receiver.length){
+                                        message = null;
+                                        new_push_count = null;
+                                    }
                                 }
                             });
                         }
                         break;
                     case 'get_push':
                         //TODO: does this foreach function series or async? If not series, it will cause push order problems.
-                        for (var i in message.receiver){
+                        for (var i =0; i< message.receiver.length;i++){
                             queue.each(message.receiver[i],function(json){
                                 logger.error(JSON.parse(json));
-                                cluster.workers[id].send({type:"send_push",'receiver':[message.receiver[i]],'json':JSON.parse(json)});
+                                cluster.workers[id].send({'type':"send_push",'receiver':[message.receiver[i]],'json':JSON.parse(json)});
+                                message.receiver[i] = null;
+                                delete message.receiver[i];
                             });
                         }
                         break;
@@ -836,6 +881,7 @@ if (!cluster.isMaster) {//actual work flow
                                 if(reply){
                                     logger.debug("restore push saved, "+reply);
                                 }
+                                message = null;
                             });
                         }else{
                             logger.error("push data is empty");
@@ -865,11 +911,18 @@ if (!cluster.isMaster) {//actual work flow
 
     var clearDisconnectedConnections = function(workerPid){
         redisConnectionPoolClient.getOnline('nothing', function(onlineplayers){
+            var count = 0;
             for(var i =0; i< onlineplayers.length;i++){
                 //filter connections belong to this worker
                 redisConnectionPoolClient.getConnection(onlineplayers[i], function(uuid, obj){
                     if(obj == workerPid){
                         redisConnectionPoolClient.delConnection(uuid);
+                    }
+                    count++;
+                    if(count == onlineplayers.length){
+                        count=null;
+                        onlineplayers = null;
+                        workerPid = null;
                     }
                 });
             }

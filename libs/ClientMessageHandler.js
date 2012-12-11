@@ -25,7 +25,6 @@ ClientMessageHandler.prototype.route = function(connection, JSONstr){
         return;
     }
 
-    console.dir(JSONmsg);
     if(JSONmsg.msg_id == -1){// this is a push
 
         this.emit('PushResponse', connection, JSONmsg);
@@ -67,6 +66,8 @@ ClientMessageHandler.prototype.route = function(connection, JSONstr){
             case 'push_response':
                 this.emit('PushResponse', connection, JSONmsg);
                 break;
+            default:
+                this.emit('NoType', connection, JSONmsg);
         }
     }
 
