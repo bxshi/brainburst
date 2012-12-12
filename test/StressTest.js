@@ -49,7 +49,7 @@ describe('# Stress Test',function(){
 //        async.parallel(parallel_task,null);
 //
 //    });
-//
+
 //    it('## plain connection with correct protocol (connect, then close it)', function(done){
 //        var latency = 0;
 //        var disconn_count = 0;
@@ -94,33 +94,46 @@ describe('# Stress Test',function(){
                 connection.on('message', function(message){
                     getData(connection, message.binaryData, msgHandler);
                 });
+                connection = null;
             });
             msgHandler.on('UserLogin', function(connection, message){
                 user = ce.clone(message.user);
                 var JSON2Send = JSON.stringify(jsonBuilder.create_match_builder('auto',message.user,{'match_data':"stressTest"}));
                 sendData(connection, JSON2Send);
+                connection = null;
+                message = null;
             });
             msgHandler.on('BotMatch', function(connection, message){
                 var JSON2Send = JSON.stringify(jsonBuilder.submit_match_builder(user, message.match));
                 console.log(JSON2Send);
-                setTimeout(sendData, Math.round(Math.random()*10000) % 2000, connection, JSON2Send);
+                setTimeout(sendData, Math.round(Math.random()*10000000)%900000, connection, JSON2Send);
                 count++;
                 if(count >= concurrency_number * 100){
                     done();
                 }
+
+                message = null;
+
             });
             msgHandler.on('UpdateMatch', function(connection, message){
                 var JSON2Send = JSON.stringify(jsonBuilder.submit_match_builder(user, message.match));
                 console.log(JSON2Send);
-                setTimeout(sendData, Math.round(Math.random()*10000) % 2000, connection, JSON2Send);
+                setTimeout(sendData, Math.round(Math.random()*10000000)%900000, connection, JSON2Send);
                 count++;
                 if(count >= concurrency_number * 100){
                     done();
                 }
+
+                message = null;
+
             });
             msgHandler.on('PushResponse', function(connection, message){
                 var JSON2Send = JSON.stringify(jsonBuilder.push_response_builder(message.push_id));
                 sendData(connection, JSON2Send);
+
+                connection = null;
+                message = null;
+
             });
         }
 
