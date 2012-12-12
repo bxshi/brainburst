@@ -92,15 +92,15 @@ describe('# Stress Test',function(){
                 var JSON2Send = JSON.stringify(jsonBuilder.user_login_builder(null, {'nickname':'stress_test'}));
                 sendData(connection, JSON2Send);
                 connection.on('message', function(message){
-                    getData(connection, message.binaryData, msgHandler);
+                    var data = message.binaryData;
+                    getData(connection, data, msgHandler);
+                    message=null;
                 });
-                connection = null;
             });
             msgHandler.on('UserLogin', function(connection, message){
                 user = ce.clone(message.user);
                 var JSON2Send = JSON.stringify(jsonBuilder.create_match_builder('auto',message.user,{'match_data':"stressTest"}));
                 sendData(connection, JSON2Send);
-                connection = null;
                 message = null;
             });
             msgHandler.on('BotMatch', function(connection, message){
@@ -130,8 +130,6 @@ describe('# Stress Test',function(){
             msgHandler.on('PushResponse', function(connection, message){
                 var JSON2Send = JSON.stringify(jsonBuilder.push_response_builder(message.push_id));
                 sendData(connection, JSON2Send);
-
-                connection = null;
                 message = null;
 
             });
