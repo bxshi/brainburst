@@ -163,6 +163,7 @@ if (!cluster.isMaster) {//actual work flow
 
     wsServer.on('close', function DebugwsServerOnClose(connection, reason, description){
         var id = connection.id;
+        connection.close();
         connection = null;
         reason = null;
         description = null;
@@ -755,7 +756,7 @@ if (!cluster.isMaster) {//actual work flow
                                         logger.debug("send push error, error code is "+err);
                                         process.send({'type':"restore_push", 'receiver':[message.receiver[tmp_id]], 'json':message.json});
                                         pushStatusPool[message.receiver[tmp_id]] = null; // fix memory leak
-                                        delete pushStatusPool[message.receiver[tmp_id]];
+                                        //delete pushStatusPool[message.receiver[tmp_id]];
                                     }
                                     tmp_id = null;
                                     send_message_count++;
