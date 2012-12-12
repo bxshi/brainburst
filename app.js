@@ -13,39 +13,41 @@
 //});
 var cluster = require('cluster');
 var CPU_NUM = require('os').cpus().length;
-var logger = require('./libs/logger.js');
+const logger = require('./libs/logger.js');
 
 // Configurations
 var Conf = require('./configuration.js');
-var conf = new Conf();
+const conf = new Conf();
+
+// 3rd-party packages
+var uuidGenerator = require("./libs/uuidGenerator.js");
+var ce = require('cloneextend');
+var WebSocketServer = require('websocket').server;
+var http = require('http');
+var https = require('https');
+var fs = require('fs');
+var zlib = require('zlib');
+
+// Self-defined libs
+var connection_pool = require('./libs/RedisConnectionPool.js');
+connection_pool.selectDB();
+var mongo = require('./libs/MongoDBConnection.js');
+var mongoClient = new mongo.MongoDBConnection(conf.mongo);
+const JSONBuilder = require('./libs/JSONBuilder.js');
+var messageHandler = require('./libs/MessageHandler.js');
+const msgHandler = new messageHandler();
+const sendData = require('./libs/common.js').sendData;
+var player = require('./libs/PlayerDAO.js');
+var match = require('./libs/MatchDAO.js');
+
+// DAOs
+var matchDAO = new match.MatchDAO(mongoClient);
+var playerDAO = new player.PlayerDAO(mongoClient);
 
 //workers -- handling websocket connections
 if (!cluster.isMaster) {//actual work flow
 
-    // 3rd-party packages
-    var uuidGenerator = require("./libs/uuidGenerator.js");
-    var ce = require('cloneextend');
-    var WebSocketServer = require('websocket').server;
-    var http = require('http');
-    var https = require('https');
-    var fs = require('fs');
-    var zlib = require('zlib');
 
-    // Self-defined libs
-    var connection_pool = require('./libs/RedisConnectionPool.js');
-    connection_pool.selectDB();
-    var mongo = require('./libs/MongoDBConnection.js');
-    var mongoClient = new mongo.MongoDBConnection(conf.mongo);
-    var JSONBuilder = require('./libs/JSONBuilder.js');
-    var messageHandler = require('./libs/MessageHandler.js');
-    var msgHandler = new messageHandler();
-    var sendData = require('./libs/common.js').sendData;
-    var player = require('./libs/PlayerDAO.js');
-    var match = require('./libs/MatchDAO.js');
-
-    // DAOs
-    var matchDAO = new match.MatchDAO(mongoClient);
-    var playerDAO = new player.PlayerDAO(mongoClient);
 
 //    var util = require('util');
 //    var memwatch = require('memwatch');
@@ -936,15 +938,15 @@ if (!cluster.isMaster) {//actual work flow
     var Monitorhttp = require("http");
     var Monitorurl = require("url");
 
-    var mongo = require('./libs/MongoDBConnection.js');
-    var mongoClient = new mongo.MongoDBConnection(conf.mongo);
-
-    var player = require('./libs/PlayerDAO.js');
-    var match = require('./libs/MatchDAO.js');
-
-    // DAOs
-    var matchDAO = new match.MatchDAO(mongoClient);
-    var playerDAO = new player.PlayerDAO(mongoClient);
+//    var mongo = require('./libs/MongoDBConnection.js');
+//    var mongoClient = new mongo.MongoDBConnection(conf.mongo);
+//
+//    var player = require('./libs/PlayerDAO.js');
+//    var match = require('./libs/MatchDAO.js');
+//
+//    // DAOs
+//    var matchDAO = new match.MatchDAO(mongoClient);
+//    var playerDAO = new player.PlayerDAO(mongoClient);
 
     Monitorhttp.createServer(function(req, res){
        var header = req.headers['authorization']||'';
