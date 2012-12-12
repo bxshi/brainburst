@@ -731,7 +731,8 @@ if (!cluster.isMaster) {//actual work flow
         if(message.type=='send_push') {
             //There we use a loop, but there some callback functions, will that cause conflict about message.receiver[i]?
             var send_message_count = 0;
-            for(var id=0; id < message.receiver.length; id++){
+            var msgLen = message.receiver.length;
+            for(var id=0; id < msgLen; id++){
                 if(connections[message.receiver[id]]!=undefined) {
                     //what if the connection is dropped just after this ?
 
@@ -756,7 +757,7 @@ if (!cluster.isMaster) {//actual work flow
                                         logger.debug("send push error, error code is "+err);
                                         process.send({'type':"restore_push", 'receiver':[message.receiver[tmp_id]], 'json':message.json});
                                         pushStatusPool[message.receiver[tmp_id]] = null; // fix memory leak
-                                        //delete pushStatusPool[message.receiver[tmp_id]];
+                                        delete pushStatusPool[message.receiver[tmp_id]];
                                     }
                                     tmp_id = null;
                                     send_message_count++;
