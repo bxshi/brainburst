@@ -15,23 +15,44 @@ if(cluster.isMaster){
     var workersConcurrency = 3;
     var workers = [];
 
-    var botShifting = function(){
-        cluster.disconnect(function(){
+    var botShiftingLeave = function(){
+        if(workers.length){
+            for(var i = 0; i< workers.length;i++){//kill all bots
+                console.dir(workers[i]);
+                workers[i].destroy();
+            }
+            setTimeout(botShiftingWork, 4000);
+        }else{
             console.log("=========Shifting Start=========");
             console.log("=========New Bots will start working=========");
             for(var i = 0; i< workersConcurrency;i++){//kill bots and restart a new one
+                workers[i] = null;
                 workers[i] = cluster.fork({'id':Math.round(Math.random()*100) % Bots.length});
             }
             console.log("=========Shifting End=========");
-        });
+        }
+
     };
 
-    setInterval(botShifting, 50000);
+    var botShiftingWork = function(){
+        console.log("=========Shifting Start=========");
+        console.log("=========New Bots will start working=========");
+        for(var i = 0; i< workersConcurrency;i++){//kill bots and restart a new one
+            workers[i] = null;
+            delete workers[i];
+            workers[i] = cluster.fork({'id':Math.round(Math.random()*100) % Bots.length});
+        }
+        console.log("=========Shifting End=========");
+    };
+
+    setInterval(botShiftingLeave, 500000);
+
+    botShiftingLeave();
 
     //restart bot
-    cluster.on('exit', function (worker, code, signal) {
-        workers[workers.indexOf(worker.process.pid)] = cluster.fork({'id':workers.indexOf(worker.process.pid)});
-    });
+//    cluster.on('exit', function (worker, code, signal) {
+//        workers[workers.indexOf(worker.process.pid)] = cluster.fork({'id':workers.indexOf(worker.process.pid)});
+//    });
 
 
 
