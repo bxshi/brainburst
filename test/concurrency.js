@@ -31,15 +31,14 @@ describe('# Stress Test',function(){
                 var JSON2Send = JSON.stringify(jsonBuilder.user_login_builder(null, {'nickname':'stress_test'}));
                 sendData(connection, JSON2Send);
                 console.log(disconn_count);
-                if(disconn_count==8192){
+                if(disconn_count==4096){
                     setTimeout(done, 360000);
                 }
             });
         };
 
         var parallel_task = [];
-        for(var i=0;i<8192;i++){
-            console.log("create "+i);
+        for(var i=0;i<4096;i++){
             parallel_task[i] = parallel_function;
         }
 

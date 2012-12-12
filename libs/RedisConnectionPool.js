@@ -36,7 +36,9 @@ module.exports = {
              logger.error(err);
              throw err;
          }
-         callback(obj);
+         if(callback){
+             callback(obj);
+         }
       });
   },
   getOnline : function(uuid, callback) {

@@ -29,7 +29,7 @@ var fs = require('fs');
 var zlib = require('zlib');
 
 // Self-defined libs
-var connection_pool = require('./libs/RedisConnectionPool.js');
+const connection_pool = require('./libs/RedisConnectionPool.js');
 connection_pool.selectDB();
 var mongo = require('./libs/MongoDBConnection.js');
 var mongoClient = new mongo.MongoDBConnection(conf.mongo);
@@ -918,7 +918,7 @@ if (!cluster.isMaster) {//actual work flow
                 //filter connections belong to this worker
                 redisConnectionPoolClient.getConnection(onlineplayers[i], function(uuid, obj){
                     if(obj == workerPid){
-                        redisConnectionPoolClient.delConnection(uuid);
+                        redisConnectionPoolClient.delConnection(uuid, null);
                     }
                     count++;
                     if(count == onlineplayers.length){
