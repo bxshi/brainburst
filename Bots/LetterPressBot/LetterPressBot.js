@@ -19,44 +19,32 @@ if(cluster.isMaster){
         if(workers.length){
             for(var i = 0; i< workers.length;i++){//kill all bots
                 console.dir(workers[i]);
-                workers[i].destroy();
+                workers[i].send('suicide');
+                //workers[i].destroy();
             }
             setTimeout(botShiftingWork, 4000);
         }else{
-            console.log("=========Shifting Start=========");
-            console.log("=========New Bots will start working=========");
-            for(var i = 0; i< workersConcurrency;i++){//kill bots and restart a new one
-                workers[i] = null;
-                workers[i] = cluster.fork({'id':Math.round(Math.random()*100) % Bots.length});
-            }
-            console.log("=========Shifting End=========");
+            botShiftingWork();
         }
-
     };
 
     var botShiftingWork = function(){
         console.log("=========Shifting Start=========");
         console.log("=========New Bots will start working=========");
         for(var i = 0; i< workersConcurrency;i++){//kill bots and restart a new one
-            workers[i] = null;
+            //workers[i] = null;
             delete workers[i];
             workers[i] = cluster.fork({'id':Math.round(Math.random()*100) % Bots.length});
         }
         console.log("=========Shifting End=========");
     };
 
-    setInterval(botShiftingLeave, 500000);
+    setInterval(botShiftingLeave, 1800000); //leave after 30mins
 
     botShiftingLeave();
 
-    //restart bot
-//    cluster.on('exit', function (worker, code, signal) {
-//        workers[workers.indexOf(worker.process.pid)] = cluster.fork({'id':workers.indexOf(worker.process.pid)});
-//    });
-
-
-
 }else{
+
     var wsCreator = require("../../libs4test/client.js");
     var logger = require("../../libs/logger.js");
     var zlib = require("zlib");
@@ -64,6 +52,9 @@ if(cluster.isMaster){
     var jsonBuilder = require("../../libs4test/clientJSONBuilder.js");
     var messageHandler = require("../../libs/ClientMessageHandler.js");
     var msgHandler = new messageHandler();
+
+    //global suicide count
+    var suicide_count = 0;
 
     var mongo = require('../../libs/MongoDBConnection.js');
     var mongoClient = new mongo.MongoDBConnection({
@@ -80,7 +71,7 @@ if(cluster.isMaster){
 
     var conn2Bot = {};
 
-    Bots[process.env.id].client = wsCreator('ws://125.39.25.101', 9876, "brain_burst");
+    Bots[process.env.id].client = wsCreator('ws://letterwords.textcutie.com', 9988, "brain_burst");
     Bots[process.env.id].client.on('connect', function(connection){
         conn2Bot[connection] = Bots[process.env.id];
         logger.info("Bot "+Bots[process.env.id].nickname+" invaded into game server!");
@@ -89,6 +80,10 @@ if(cluster.isMaster){
         connection.on('message', function(message){
             logger.info("Bot "+Bots[process.env.id].nickname+" got a message");
             unzipData(connection, message.binaryData);
+        });
+        connection.on('error', function(error){
+            logger.error('connection failed, error is "+error+" try reconnect');
+            Bots[process.env.id].client = wsCreator('ws://125.39.25.101', 9876, "brain_burst");
         });
     });
 
@@ -235,6 +230,7 @@ if(cluster.isMaster){
                     };
 
                     sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
+                    suicide_count--;
                 }else if(mustIncludeWord!="" && organizedData.lettersForNewWords.length < 25){ // not get full of this
                     logger.warn("not find any words with a must have character "+mustIncludeWord+", try got words with more characters");
                     organizedData.lettersForNewWords = organizedData.letters;
@@ -268,6 +264,7 @@ if(cluster.isMaster){
                         };
 
                         sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
+                        suicide_count--;
                         return;
                     }
                 }
@@ -320,7 +317,7 @@ if(cluster.isMaster){
                 };
 
                 sendData(connection, JSON.stringify(constructJSON(user, organizedData)));
-
+                suicide_count--;
             }
         });
     };
@@ -395,6 +392,7 @@ if(cluster.isMaster){
     };
 
     var submit_match_logic_wrapper = function(connection, JSONmsg){
+        suicide_count++;
         setTimeout(submit_match_logic, Math.round(Math.random() * 100000)%(conn2Bot[connection].response_interval)+10000, connection, JSONmsg);
     };
 
@@ -420,10 +418,31 @@ if(cluster.isMaster){
     });
 
     msgHandler.on('PushResponse', function(connection, JSONmsg){
+        suicide_count++;
         if(JSONmsg.push_id){
             console.log("send push response");
             var JSON2Send = JSON.stringify(jsonBuilder.push_response_builder(JSONmsg.push_id));
             sendData(connection, JSON2Send);
         }
+        suicide_count--;
     });
+
+    process.on('message', function(msg){
+       if(msg == 'suicide'){
+           //got suicide message, try kill myself
+
+           trySuicide();
+
+       }
+    });
+
+    var trySuicide = function(){
+        if(suicide_count == 0){
+            process.kill(process.pid, 'SIGHUP');
+        }else{
+            logger.error("worker still working, delay destory for 1 min");
+            setTimeout(trySuicide, 60000);
+        }
+    }
+
 }
