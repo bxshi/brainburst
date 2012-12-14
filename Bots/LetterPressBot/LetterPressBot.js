@@ -18,8 +18,12 @@ if(cluster.isMaster){
     var botShiftingLeave = function(){
         if(workers.length){
             for(var i = 0; i< workers.length;i++){//kill all bots
-                console.dir(workers[i]);
-                workers[i].send('suicide');
+//                console.dir(workers[i]);
+                try{
+                    workers[i].send('suicide');
+                }catch(e){
+                    console.log("worker already closed");
+                }
                 //workers[i].destroy();
             }
             setTimeout(botShiftingWork, 4000);
