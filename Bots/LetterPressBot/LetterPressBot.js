@@ -82,8 +82,9 @@ if(cluster.isMaster){
             unzipData(connection, message.binaryData);
         });
         connection.on('error', function(error){
-            logger.error('connection failed, error is "+error+" try reconnect');
-            Bots[process.env.id].client = wsCreator('ws://125.39.25.101', 9876, "brain_burst");
+            logger.error('connection failed, error is '+error+' try reconnect');
+            Bots[process.env.id].client = wsCreator('ws://letterwords.textcutie.com', 9988, "brain_burst");
+            Bots[process.env.id].client.on('')
         });
     });
 
@@ -327,6 +328,7 @@ if(cluster.isMaster){
         logger.info(JSON.stringify(JSONmsg));
         //check if it is bot's turn
         if(!gameValidation(conn2Bot[connection].user, JSONmsg)){
+            suicide_count--;
             return;
         }
 
@@ -439,6 +441,8 @@ if(cluster.isMaster){
     var trySuicide = function(){
         if(suicide_count == 0){
             process.kill(process.pid, 'SIGHUP');
+            logger.error("successful killed");
+            logger.error("suicide_count is "+suicide_count);
         }else{
             logger.error("worker still working, delay destory for 1 min");
             setTimeout(trySuicide, 60000);
