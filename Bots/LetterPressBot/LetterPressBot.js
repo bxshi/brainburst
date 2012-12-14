@@ -83,8 +83,7 @@ if(cluster.isMaster){
         });
         connection.on('error', function(error){
             logger.error('connection failed, error is '+error+' try reconnect');
-            Bots[process.env.id].client = wsCreator('ws://letterwords.textcutie.com', 9988, "brain_burst");
-            Bots[process.env.id].client.on('')
+            process.kill(process.pid, 'SIGHUP');
         });
     });
 
