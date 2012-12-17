@@ -47,40 +47,6 @@ var playerDAO = new player.PlayerDAO(mongoClient);
 //workers -- handling websocket connections
 if (!cluster.isMaster) {//actual work flow
 
-
-
-//    var util = require('util');
-//    var memwatch = require('memwatch');
-//
-//    var heapDiffer = new memwatch.HeapDiff();
-//
-//    memwatch.on('stats', function checkMemory(info){
-//
-//        var diff = heapDiffer.end();
-//        console.log("Before heap info");
-//        console.log(util.inspect(diff.before, true, null));
-//
-//        console.log("After heap info");
-//        console.log(util.inspect(diff.after, true, null));
-//
-//        console.log("Heap changes");
-//        console.log(util.inspect(diff.change, true, null));
-//        heapDiffer = new memwatch.HeapDiff();
-//    });
-
-//    var options = {
-//        key: fs.readFileSync('./ssl/server.key'),
-//        passphrase: 'BrainBurst',
-//        cert: fs.readFileSync('./ssl/server.crt')
-//    };
-
-//    var httpsServer = https.createServer(options, function (req, res) {
-//        logger.warn("Received http request for " + req.url + " that maybe an attack?");
-//        res.writeHead(404);
-//        res.end();
-//    });
-
-
     var server = http.createServer(function DebugHttpServerReturn(request, response) {
         logger.warn("Received http request for " + request.url + " that maybe an attack?");
         response.writeHead(404);
@@ -939,16 +905,6 @@ if (!cluster.isMaster) {//actual work flow
 
     var Monitorhttp = require("http");
     var Monitorurl = require("url");
-
-//    var mongo = require('./libs/MongoDBConnection.js');
-//    var mongoClient = new mongo.MongoDBConnection(conf.mongo);
-//
-//    var player = require('./libs/PlayerDAO.js');
-//    var match = require('./libs/MatchDAO.js');
-//
-//    // DAOs
-//    var matchDAO = new match.MatchDAO(mongoClient);
-//    var playerDAO = new player.PlayerDAO(mongoClient);
 
     Monitorhttp.createServer(function(req, res){
        var header = req.headers['authorization']||'';
